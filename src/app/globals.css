@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+/* Safe area variables */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Prevent overscroll bounce on iOS for the whole page */
+  overscroll-behavior: none;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Support for notch/dynamic island */
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Remove tap highlight on all tappable elements */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Faster taps — removes 300ms delay on mobile */
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Transitions */
+button, a {
+  transition: opacity 0.15s, transform 0.1s, background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+/* Prevent iOS Safari from zooming into inputs (requires font-size >= 16px) */
+input, textarea, select {
+  font-size: 16px;
+}
+
+/* Shared input style */
+.input {
+  @apply w-full px-4 py-3 rounded-xl border border-slate-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-white;
+  font-size: 16px;
+}
+
+/* Safe-area bottom utility (used with pb-safe) */
+.pb-safe {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+/* Bottom nav safe padding */
+.pb-nav {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+/* Active press scale for mobile buttons */
+.btn-press:active {
+  transform: scale(0.96);
+}
+
+@media print {
+  .no-print { display: none; }
+}

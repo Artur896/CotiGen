@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "src/app/api/materiales/pdf/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "src/app/api/generate-pdf/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
+}
