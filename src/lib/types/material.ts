@@ -16,6 +16,7 @@ export interface ListItem {
 export interface MaterialList {
   id: string;
   numero: number;
+  nombre: string;
   cliente: string;
   telefono: string;
   fecha: string;

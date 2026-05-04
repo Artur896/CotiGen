@@ -6,13 +6,13 @@ import { CatalogItem } from '@/lib/types/material';
 import { BottomNav } from '@/components/BottomNav';
 import { BookOpen, Plus, Pencil, Trash2, X, Search } from 'lucide-react';
 
-const UNIDADES = ['pieza', 'metro', 'litro', 'kg', 'rollo', 'caja', 'par', 'juego', 'servicio', 'hora'];
+const UNIDADES = ['pieza', 'metro', 'litro', 'kg', 'gramo', 'rollo', 'caja', 'par', 'juego', 'servicio', 'hora'];
 
 type FormState = { nombre: string; unidad: string; categoria: string };
 const EMPTY: FormState = { nombre: '', unidad: 'pieza', categoria: '' };
 
 export default function CatalogoPage() {
-  const { items, ready, add, update, remove } = useCatalog();
+  const { items, ready, addCustom, updateCustom, removeCustom } = useCatalog();
   const [search, setSearch] = useState('');
   const [sheet, setSheet] = useState<'none' | 'add' | 'delete'>('none');
   const [editing, setEditing] = useState<CatalogItem | null>(null);
@@ -29,12 +29,12 @@ export default function CatalogoPage() {
   };
   const closeSheet = () => { setSheet('none'); setEditing(null); setError(''); };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
     if (editing) {
-      update(editing.id, { nombre: form.nombre.trim(), unidad: form.unidad, categoria: form.categoria.trim() });
+      await updateCustom(editing.id, { nombre: form.nombre.trim(), unidad: form.unidad, categoria: form.categoria.trim() });
     } else {
-      add({ nombre: form.nombre.trim(), unidad: form.unidad, categoria: form.categoria.trim() });
+      await addCustom({ nombre: form.nombre.trim(), unidad: form.unidad, categoria: form.categoria.trim() });
     }
     closeSheet();
   };
@@ -240,7 +240,7 @@ export default function CatalogoPage() {
             </p>
             <div className="space-y-2">
               <button
-                onClick={() => { remove(deleteTarget.id); setSheet('none'); }}
+                onClick={() => { removeCustom(deleteTarget.id); setSheet('none'); }}
                 className="w-full py-4 rounded-2xl font-bold text-white bg-red-500 active:bg-red-600 btn-press"
               >
                 Sí, eliminar

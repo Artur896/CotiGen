@@ -1,12 +1,17 @@
 export async function generatePDF(html: string) {
-  const chromium = (await import('@sparticuz/chromium')).default;
-  const puppeteer = (await import('puppeteer-core')).default;
-
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath(),
-    headless: true,
-  });
+  let browser;
+  if (process.env.NODE_ENV === 'development' || !process.env.VERCEL) {
+    const puppeteer = (await import('puppeteer')).default;
+    browser = await puppeteer.launch({ headless: true });
+  } else {
+    const chromium = (await import('@sparticuz/chromium')).default;
+    const puppeteer = (await import('puppeteer-core')).default;
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    });
+  }
 
   try {
     const page = await browser.newPage();

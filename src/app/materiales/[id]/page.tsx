@@ -4,9 +4,12 @@ import { useEffect, useState, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLists } from '@/lib/store/useLists';
+import { useCatalog } from '@/lib/store/useCatalog';
 import { MaterialList, ListItem, CatalogItem } from '@/lib/types/material';
 import { ArrowLeft, Save, FileDown, Plus, Trash2, Search, X } from 'lucide-react';
-import { DEFAULT_CATALOG, CATEGORIES } from '@/lib/data/defaultCatalog';
+import { LoadingScreen } from '@/components/LoadingScreen';
+import { CATEGORIES } from '@/lib/data/defaultCatalog';
+import { useToast } from '@/components/shared/Toast';
 
 function genLineId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -28,7 +31,10 @@ export default function ListaEditorPage({
   const router = useRouter();
 
   const { ready: listsReady, create, update, getById } = useLists();
+  const { items: catalog, customItems, addCustom } = useCatalog();
+  const { success } = useToast();
 
+  const [nombre, setNombre] = useState('');
   const [notas, setNotas] = useState('');
   const [items, setItems] = useState<ListItem[]>([]);
   const [error, setError] = useState('');
@@ -42,6 +48,11 @@ export default function ListaEditorPage({
   const [addQty, setAddQty] = useState(1);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Custom material
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customNombre, setCustomNombre] = useState('');
+  const [customUnidad, setCustomUnidad] = useState('pieza');
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -57,14 +68,20 @@ export default function ListaEditorPage({
     if (isNew || !listsReady) return;
     const existing = getById(id);
     if (!existing) { router.replace('/materiales'); return; }
+    setNombre(existing.nombre ?? '');
     setNotas(existing.notas);
     setItems(existing.items);
     setLoaded(true);
   }, [id, isNew, listsReady, getById, router]);
 
+  // Items del catálogo base filtrados por categoría
+  // Los materiales custom del usuario siempre se incluyen sin importar la categoría
   const catalogPool = categoria === 'General'
-    ? DEFAULT_CATALOG
-    : DEFAULT_CATALOG.filter((i) => i.categoria === categoria);
+    ? catalog
+    : [
+        ...catalog.filter((i) => i.categoria === categoria),
+        ...customItems, // materiales del usuario siempre visibles
+      ];
 
   const filteredCatalog = search.trim().length > 0
     ? catalogPool.filter((i) =>
@@ -77,11 +94,38 @@ export default function ListaEditorPage({
     setSelectedItem(item);
     setSearch(item.nombre);
     setShowDropdown(false);
+    setShowCustomForm(false);
   };
 
   const handleClearSearch = () => {
     setSearch('');
     setSelectedItem(null);
+    setShowDropdown(false);
+    setShowCustomForm(false);
+  };
+
+  const handleAddCustom = async () => {
+    if (!customNombre.trim()) return;
+
+    // Guardar en catálogo custom (Supabase) y agregar a la lista
+    const saved = await addCustom({
+      nombre: customNombre.trim(),
+      unidad: customUnidad,
+      categoria: 'General',
+    });
+
+    setItems((prev) => [...prev, {
+      lineId: genLineId(),
+      catalogId: saved.id,
+      nombre: saved.nombre,
+      cantidad: addQty,
+      unidad: saved.unidad,
+    }]);
+
+    setCustomNombre('');
+    setCustomUnidad('pieza');
+    setShowCustomForm(false);
+    setSearch('');
     setShowDropdown(false);
   };
 
@@ -123,6 +167,7 @@ export default function ListaEditorPage({
     setItems((prev) => prev.filter((i) => i.lineId !== lineId));
 
   const buildPayload = (): Omit<MaterialList, 'id' | 'numero' | 'createdAt' | 'updatedAt'> => ({
+    nombre: nombre.trim(),
     cliente: '',
     telefono: '',
     fecha: new Date().toISOString().split('T')[0],
@@ -130,12 +175,14 @@ export default function ListaEditorPage({
     items,
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (items.length === 0) { setError('Agrega al menos un material.'); return; }
     setSaving(true);
     setError('');
     try {
-      if (isNew) create(buildPayload()); else update(id, buildPayload());
+      const result = isNew ? await create(buildPayload()) : await update(id, buildPayload());
+      if (!result) { setError('Error al guardar. Intenta de nuevo.'); return; }
+      success('Se guardó correctamente');
       router.push('/materiales');
     } finally {
       setSaving(false);
@@ -148,8 +195,8 @@ export default function ListaEditorPage({
     setError('');
     try {
       let listData: MaterialList | null = null;
-      if (isNew) listData = create(buildPayload());
-      else listData = update(id, buildPayload());
+      if (isNew) listData = await create(buildPayload());
+      else listData = await update(id, buildPayload());
       if (!listData) { setError('Error al guardar.'); return; }
 
       const res = await fetch('/api/materiales/pdf', {
@@ -165,19 +212,14 @@ export default function ListaEditorPage({
       a.download = `lista-${String(listData.numero).padStart(4, '0')}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+      success('Descarga completa');
       if (isNew) router.replace(`/materiales/${listData.id}`);
     } finally {
       setDownloading(false);
     }
   };
 
-  if (!loaded) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (!loaded) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -221,6 +263,23 @@ export default function ListaEditorPage({
             {error}
           </div>
         )}
+
+        {/* List name */}
+        <section className="bg-white rounded-2xl border border-slate-100 p-4">
+          <label className="block">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 block">
+              Nombre de la lista
+            </span>
+            <input
+              type="text"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Ej. Casa Hernández, Obra 3, Departamento..."
+              className="input"
+            />
+            <p className="text-xs text-slate-300 mt-1.5">Solo para identificar la lista, no aparece en el PDF</p>
+          </label>
+        </section>
 
         {/* Notes */}
         <section className="bg-white rounded-2xl border border-slate-100 p-4">
@@ -271,40 +330,84 @@ export default function ListaEditorPage({
               <div className="absolute left-0 right-0 top-[calc(100%+6px)] bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
                    style={{ maxHeight: '52vh', overflowY: 'auto' }}>
                 {filteredCatalog.length === 0 ? (
-                  <p className="text-center text-slate-400 text-sm py-6">Sin resultados para "{search}"</p>
-                ) : categoria === 'General' ? (
-                  // General: group by category
-                  CATEGORIES.map((c) => {
-                    const catItems = filteredCatalog.filter((i) => i.categoria === c);
-                    if (!catItems.length) return null;
-                    return (
-                      <div key={c}>
-                        <p className="px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100 sticky top-0">
-                          {c}
-                        </p>
-                        {catItems.map((item) => (
-                          <button key={item.id} onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectItem(item)}
-                            className="w-full flex items-center justify-between px-4 py-3.5 text-left active:bg-emerald-50 border-b border-slate-50 last:border-0 btn-press">
-                            <span className="text-sm font-semibold text-slate-800 leading-tight">{item.nombre}</span>
-                            <span className="text-xs text-slate-400 ml-3 shrink-0">{item.unidad}</span>
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })
-                ) : (
-                  // Single category: flat list
-                  filteredCatalog.map((item) => (
-                    <button key={item.id} onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectItem(item)}
-                      className="w-full flex items-center justify-between px-4 py-3.5 text-left active:bg-emerald-50 border-b border-slate-50 last:border-0 btn-press">
-                      <span className="text-sm font-semibold text-slate-800 leading-tight">{item.nombre}</span>
-                      <span className="text-xs text-slate-400 ml-3 shrink-0">{item.unidad}</span>
+                  <div className="px-4 py-4 text-center">
+                    <p className="text-slate-400 text-sm mb-3">Sin resultados para "{search}"</p>
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setCustomNombre(search);
+                        setShowCustomForm(true);
+                        setShowDropdown(false);
+                      }}
+                      className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-xl btn-press"
+                    >
+                      <Plus size={15} /> Agregar como nuevo material
                     </button>
-                  ))
+                  </div>
+                ) : (
+                  // Lista plana agrupada por categoría (incluye 'General' y cualquier categoría custom)
+                  (() => {
+                    const allCategories = [...new Set(filteredCatalog.map(i => i.categoria))].sort();
+                    return allCategories.map((cat) => {
+                      const catItems = filteredCatalog.filter(i => i.categoria === cat);
+                      if (!catItems.length) return null;
+                      return (
+                        <div key={cat}>
+                          <p className="px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100 sticky top-0">
+                            {cat}
+                          </p>
+                          {catItems.map((item) => (
+                            <button key={item.id} onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectItem(item)}
+                              className="w-full flex items-center justify-between px-4 py-3.5 text-left active:bg-emerald-50 border-b border-slate-50 last:border-0 btn-press">
+                              <span className="text-sm font-semibold text-slate-800 leading-tight">{item.nombre}</span>
+                              <span className="text-xs text-slate-400 ml-3 shrink-0">{item.unidad}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    });
+                  })()
                 )}
               </div>
             )}
           </div>
+
+          {/* Custom material form */}
+          {showCustomForm && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-emerald-900">Nuevo material</p>
+                <button onClick={() => setShowCustomForm(false)} className="text-emerald-400 btn-press">
+                  <X size={16} />
+                </button>
+              </div>
+              <input
+                autoFocus
+                type="text"
+                value={customNombre}
+                onChange={(e) => setCustomNombre(e.target.value)}
+                placeholder="Nombre del material"
+                className="input"
+                style={{ fontSize: 16 }}
+              />
+              <select
+                value={customUnidad}
+                onChange={(e) => setCustomUnidad(e.target.value)}
+                className="input"
+              >
+                {['pieza','metro','litro','kg','gramos','rollo','caja','par','juego','servicio','hora'].map(u => (
+                  <option key={u}>{u}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleAddCustom}
+                disabled={!customNombre.trim()}
+                className="w-full py-3 rounded-xl text-sm font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-40"
+              >
+                Agregar a la lista
+              </button>
+            </div>
+          )}
 
           {/* Selected item */}
           {selectedItem && (

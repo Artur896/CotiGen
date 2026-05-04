@@ -3,51 +3,91 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CatalogItem } from '@/lib/types/material';
 import { DEFAULT_CATALOG } from '@/lib/data/defaultCatalog';
-
-const KEY = 'cotigen_catalog';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 function genId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  return `custom-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export function useCatalog() {
-  const [items, setItems] = useState<CatalogItem[]>([]);
+  const { user } = useAuth();
+  const [customItems, setCustomItems] = useState<CatalogItem[]>([]);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) {
-        setItems(JSON.parse(raw));
-      } else {
-        localStorage.setItem(KEY, JSON.stringify(DEFAULT_CATALOG));
-        setItems(DEFAULT_CATALOG);
-      }
-    } catch {}
+  const fetchCustom = useCallback(async () => {
+    if (!user) { setReady(true); return; }
+
+    const { data } = await supabase
+      .from('catalogo_custom')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('nombre');
+
+    if (data) {
+      setCustomItems(data.map((row: any) => ({
+        id: row.id,
+        nombre: row.nombre,
+        unidad: row.unidad,
+        categoria: row.categoria ?? 'General',
+      })));
+    }
     setReady(true);
-  }, []);
+  }, [user]);
 
-  const persist = useCallback((next: CatalogItem[]) => {
-    const sorted = [...next].sort(
-      (a, b) => a.categoria.localeCompare(b.categoria) || a.nombre.localeCompare(b.nombre)
+  useEffect(() => { fetchCustom(); }, [fetchCustom]);
+
+  // Catálogo completo = base fija + custom del usuario
+  const items: CatalogItem[] = [
+    ...DEFAULT_CATALOG,
+    ...customItems,
+  ];
+
+  const addCustom = useCallback(async (input: Omit<CatalogItem, 'id'>): Promise<CatalogItem> => {
+    const tempId = genId();
+    const newItem: CatalogItem = { id: tempId, ...input };
+
+    // Guardar en Supabase
+    if (user) {
+      const { data } = await supabase
+        .from('catalogo_custom')
+        .insert({
+          user_id: user.id,
+          nombre: input.nombre,
+          unidad: input.unidad,
+          categoria: input.categoria,
+        })
+        .select()
+        .single();
+
+      if (data) {
+        const saved: CatalogItem = {
+          id: data.id,
+          nombre: data.nombre,
+          unidad: data.unidad,
+          categoria: data.categoria ?? 'General',
+        };
+        setCustomItems((prev) => [...prev, saved].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+        return saved;
+      }
+    }
+
+    setCustomItems((prev) => [...prev, newItem]);
+    return newItem;
+  }, [user]);
+
+  const updateCustom = useCallback(async (id: string, patch: Partial<Omit<CatalogItem, 'id'>>) => {
+    await supabase.from('catalogo_custom').update(patch).eq('id', id);
+    setCustomItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...patch } : i))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre))
     );
-    setItems(sorted);
-    localStorage.setItem(KEY, JSON.stringify(sorted));
   }, []);
 
-  const add = useCallback((input: Omit<CatalogItem, 'id'>): CatalogItem => {
-    const item: CatalogItem = { id: genId(), ...input };
-    persist([...items, item]);
-    return item;
-  }, [items, persist]);
+  const removeCustom = useCallback(async (id: string) => {
+    await supabase.from('catalogo_custom').delete().eq('id', id);
+    setCustomItems((prev) => prev.filter((i) => i.id !== id));
+  }, []);
 
-  const update = useCallback((id: string, patch: Partial<Omit<CatalogItem, 'id'>>) => {
-    persist(items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
-  }, [items, persist]);
-
-  const remove = useCallback((id: string) => {
-    persist(items.filter((i) => i.id !== id));
-  }, [items, persist]);
-
-  return { items, ready, add, update, remove };
+  return { items, customItems, ready, addCustom, updateCustom, removeCustom };
 }

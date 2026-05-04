@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useLists } from '@/lib/store/useLists';
 import { MaterialList } from '@/lib/types/material';
 import { BottomNav } from '@/components/BottomNav';
-import { Package, Plus, Pencil, Trash2, Search, X, ChevronRight } from 'lucide-react';
+import { Package, Plus, Pencil, Trash2, Search, X, ChevronRight, LogOut, ClipboardCheck } from 'lucide-react';
+import { InlineLoader } from '@/components/LoadingScreen';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { useToast } from '@/components/shared/Toast';
 
 const CATEGORIAS = [
   { key: 'CPVC',           label: 'CPVC',            desc: 'Agua caliente y fría',        bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-700',    dot: 'bg-red-500'    },
@@ -24,6 +27,8 @@ function formatDate(iso: string) {
 export default function MaterialesPage() {
   const router = useRouter();
   const { lists, ready, remove } = useLists();
+  const { user, signOut } = useAuth();
+  const { success } = useToast();
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<MaterialList | null>(null);
   const [showCatPicker, setShowCatPicker] = useState(false);
@@ -41,12 +46,22 @@ export default function MaterialesPage() {
       <header className="bg-white border-b border-slate-100 sticky top-0 z-10">
         <div className="px-4 h-14 flex items-center gap-3">
           <Package size={20} className="text-emerald-600 shrink-0" />
-          <span className="font-bold text-slate-900 flex-1">Mis Listas</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-900 leading-tight">Mis Listas</p>
+            {user && <p className="text-xs text-slate-400 truncate">{user.nombre}</p>}
+          </div>
           {lists.length > 0 && (
             <span className="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded-full">
               {lists.length}
             </span>
           )}
+          <button
+            onClick={() => signOut()}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 active:bg-slate-100 btn-press"
+            title="Cerrar sesión"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </header>
 
@@ -72,9 +87,7 @@ export default function MaterialesPage() {
       {/* List */}
       <main className="flex-1 px-4 pb-nav pt-2">
         {!ready ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <InlineLoader />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-4">
@@ -112,7 +125,9 @@ export default function MaterialesPage() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 truncate">{l.cliente}</p>
+                    <p className="font-bold text-slate-900 truncate">
+                      {l.nombre?.trim() || `Lista #${String(l.numero).padStart(2, '0')}`}
+                    </p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {l.items.length} material{l.items.length !== 1 ? 'es' : ''} · {formatDate(l.fecha)}
                     </p>
@@ -122,6 +137,13 @@ export default function MaterialesPage() {
 
                 {/* Swipe-like actions */}
                 <div className="flex border-t border-slate-50">
+                  <button
+                    onClick={() => router.push(`/materiales/${l.id}/revision`)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-emerald-500 active:bg-emerald-50 btn-press"
+                  >
+                    <ClipboardCheck size={14} /> Revisar
+                  </button>
+                  <div className="w-px bg-slate-50" />
                   <button
                     onClick={() => router.push(`/materiales/${l.id}`)}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-indigo-500 active:bg-indigo-50 btn-press"
@@ -168,7 +190,11 @@ export default function MaterialesPage() {
             </p>
             <div className="space-y-2">
               <button
-                onClick={() => { remove(deleteTarget.id); setDeleteTarget(null); }}
+                onClick={async () => { 
+                  await remove(deleteTarget.id); 
+                  setDeleteTarget(null); 
+                  success('Se eliminó correctamente');
+                }}
                 className="w-full py-4 rounded-2xl text-sm font-bold text-white bg-red-500 active:bg-red-600 btn-press"
               >
                 Sí, eliminar

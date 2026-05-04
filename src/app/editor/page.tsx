@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BottomNav } from '@/components/BottomNav';
 import { Download, Eye, PenLine, Plus, Trash2, ChevronDown, FileText } from 'lucide-react';
+import { useToast } from '@/components/shared/Toast';
 
 interface LineItem {
   id: string;
@@ -44,6 +45,7 @@ export default function EditorPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [quotationNumber, setQuotationNumber] = useState('');
   const [fecha, setFecha] = useState('');
+  const { success } = useToast();
 
   useEffect(() => {
     setQuotationNumber(`COT-${Math.floor(1000 + Math.random() * 9000)}`);
@@ -91,6 +93,7 @@ export default function EditorPage() {
         a.download = `cotizacion-${quotationNumber}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
+        success('Descarga completa');
       }
     } catch (e) {
       console.error(e);
