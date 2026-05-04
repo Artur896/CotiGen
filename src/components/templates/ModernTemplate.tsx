@@ -2,6 +2,7 @@ import { Header } from '../shared/Header';
 import { ItemsTable } from '../shared/ItemsTable';
 import { Footer } from '../shared/Footer';
 import { QuotationExtraInfo } from '../shared/QuotationExtraInfo';
+import { QuotationData } from '@/lib/types';
 
 export function ModernTemplate({ data }: { data: QuotationData }) {
   return (
