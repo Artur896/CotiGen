@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
       printBackground: true,
     });
-    return new NextResponse(pdf, {
+    return new NextResponse(Buffer.from(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="lista-materiales.pdf"`,
