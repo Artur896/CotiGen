@@ -1,24 +1,39 @@
 {
   "name": "CotiGen",
   "short_name": "CotiGen",
-  "description": "Listas de materiales y cotizaciones profesionales",
-  "start_url": "/",
+  "description": "Listas de materiales y cotizaciones",
+  "start_url": "/materiales",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#ffffff",
   "theme_color": "#059669",
   "orientation": "portrait",
+  "categories": ["business", "utilities"],
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

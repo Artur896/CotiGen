@@ -1,4 +1,4 @@
-const CACHE = 'cotigen-v1';
+const CACHE = 'cotigen-v2';
 const PRECACHE = ['/', '/materiales', '/catalogo', '/editor'];
 
 self.addEventListener('install', (e) => {
@@ -19,7 +19,6 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  // Always go to network for API calls
   if (e.request.url.includes('/api/')) return;
   e.respondWith(
     fetch(e.request)
