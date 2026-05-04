@@ -15,8 +15,8 @@
 
 html {
   scroll-behavior: smooth;
-  /* Prevent overscroll bounce on iOS for the whole page */
   overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 body {
@@ -24,8 +24,9 @@ body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Support for notch/dynamic island */
   padding-top: env(safe-area-inset-top);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* Remove tap highlight on all tappable elements */

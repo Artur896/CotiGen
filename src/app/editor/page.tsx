@@ -103,29 +103,29 @@ export default function EditorPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-20">
-        <div className="px-4 h-14 flex items-center gap-3">
-          <FileText size={20} className="text-indigo-600 shrink-0" />
-          <span className="font-bold text-slate-900 flex-1">Cotizaciones</span>
+        <div className="px-3 h-14 flex items-center gap-2">
+          <FileText size={18} className="text-indigo-600 shrink-0" />
+          <span className="font-bold text-slate-900 flex-1 text-sm truncate">Cotizaciones</span>
 
           {/* Template */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <select
               value={template}
               onChange={(e) => setTemplate(e.target.value)}
-              className="appearance-none bg-slate-100 text-slate-700 font-bold text-xs py-2.5 pl-3 pr-7 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="appearance-none bg-slate-100 text-slate-700 font-bold text-xs py-2.5 pl-2.5 pr-6 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 max-w-22.5"
             >
               {TEMPLATES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
-            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
 
           {/* Download */}
           <button
             onClick={handleDownload}
             disabled={isGenerating}
-            className="flex items-center gap-1.5 bg-indigo-600 active:bg-indigo-700 text-white px-3 py-2.5 rounded-xl text-xs font-bold btn-press disabled:opacity-50"
+            className="flex items-center gap-1 bg-indigo-600 active:bg-indigo-700 text-white px-3 py-2.5 rounded-xl text-xs font-bold btn-press disabled:opacity-50 shrink-0"
           >
             {isGenerating
               ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

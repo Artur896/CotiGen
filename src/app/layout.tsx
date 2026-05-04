@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist } from 'next/font/google';
 import './globals.css';
 import { PwaInit } from '@/components/PwaInit';
+import { InstallBanner } from '@/components/InstallBanner';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' });
 
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-full flex flex-col">
         <PwaInit />
+        <InstallBanner />
         {children}
       </body>
     </html>

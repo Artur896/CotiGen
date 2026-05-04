@@ -183,33 +183,34 @@ export default function ListaEditorPage({
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-10">
-        <div className="px-4 h-14 flex items-center gap-2">
-          <Link href="/materiales" className="w-10 h-10 flex items-center justify-center text-slate-400 btn-press rounded-xl active:bg-slate-100">
-            <ArrowLeft size={22} />
+        <div className="px-3 h-14 flex items-center gap-2">
+          <Link href="/materiales" className="w-9 h-9 flex items-center justify-center text-slate-400 btn-press rounded-xl active:bg-slate-100 shrink-0">
+            <ArrowLeft size={20} />
           </Link>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-slate-900 text-sm leading-tight">
+            <p className="font-bold text-slate-900 text-sm leading-tight truncate">
               {isNew ? 'Nueva lista' : 'Editar lista'}
             </p>
             {isNew && (
-              <p className="text-xs text-slate-400 leading-tight">{categoria}</p>
+              <p className="text-xs text-slate-400 leading-tight truncate">{categoria}</p>
             )}
           </div>
           <button
             onClick={handleDownloadPdf}
             disabled={downloading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50 active:bg-emerald-100 btn-press disabled:opacity-50"
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-emerald-700 bg-emerald-50 active:bg-emerald-100 btn-press disabled:opacity-50 shrink-0"
           >
-            <FileDown size={16} />
-            {downloading ? '...' : 'PDF'}
+            {downloading
+              ? <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+              : <FileDown size={18} />}
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-50 shrink-0"
           >
             <Save size={15} />
-            Guardar
+            {saving ? '...' : 'Guardar'}
           </button>
         </div>
       </header>
@@ -319,37 +320,35 @@ export default function ListaEditorPage({
           )}
 
           {/* Qty row */}
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 block">Cantidad</span>
-              <div className="flex items-center border-2 border-slate-200 rounded-2xl overflow-hidden">
-                <button
-                  onClick={() => setAddQty((q) => Math.max(1, q - 1))}
-                  className="w-12 h-12 flex items-center justify-center text-slate-500 font-bold text-2xl active:bg-slate-100 btn-press shrink-0"
-                >−</button>
-                <input
-                  type="number"
-                  min={1}
-                  value={addQty}
-                  onChange={(e) => setAddQty(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="flex-1 h-12 text-center font-bold text-slate-900 focus:outline-none bg-transparent"
-                  style={{ fontSize: 16 }}
-                />
-                <button
-                  onClick={() => setAddQty((q) => q + 1)}
-                  className="w-12 h-12 flex items-center justify-center text-slate-500 font-bold text-2xl active:bg-slate-100 btn-press shrink-0"
-                >+</button>
-              </div>
+          <div>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 block">Cantidad</span>
+            <div className="flex items-center border-2 border-slate-200 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setAddQty((q) => Math.max(1, q - 1))}
+                className="w-12 h-12 flex items-center justify-center text-slate-500 font-bold text-2xl active:bg-slate-100 btn-press shrink-0"
+              >−</button>
+              <input
+                type="number"
+                min={1}
+                value={addQty}
+                onChange={(e) => setAddQty(Math.max(1, parseInt(e.target.value) || 1))}
+                className="flex-1 h-12 text-center font-bold text-slate-900 focus:outline-none bg-transparent"
+                style={{ fontSize: 16 }}
+              />
+              <button
+                onClick={() => setAddQty((q) => q + 1)}
+                className="w-12 h-12 flex items-center justify-center text-slate-500 font-bold text-2xl active:bg-slate-100 btn-press shrink-0"
+              >+</button>
             </div>
-
-            <button
-              onClick={handleAdd}
-              disabled={!selectedItem}
-              className="h-12 px-5 rounded-2xl font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-40 flex items-center gap-2 whitespace-nowrap"
-            >
-              <Plus size={18} /> Agregar
-            </button>
           </div>
+
+          <button
+            onClick={handleAdd}
+            disabled={!selectedItem}
+            className="w-full h-12 rounded-2xl font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            <Plus size={18} /> Agregar a la lista
+          </button>
         </section>
 
         {/* Materials list */}
