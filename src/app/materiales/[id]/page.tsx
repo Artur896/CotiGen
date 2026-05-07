@@ -205,7 +205,11 @@ export default function ListaEditorPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(listData),
       });
-      if (!res.ok) { setError('Error al generar el PDF.'); return; }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.details || body.error || 'Error al generar el PDF.');
+        return;
+      }
       const blob = await res.blob();
       await downloadPDFBlob(blob, `lista-${String(listData.numero).padStart(4, '0')}.pdf`);
       success('Descarga completa');
