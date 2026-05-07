@@ -46,7 +46,7 @@ export default function EditorPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [quotationNumber, setQuotationNumber] = useState('');
   const [fecha, setFecha] = useState('');
-  const { success } = useToast();
+  const { success, error } = useToast();
 
   useEffect(() => {
     setQuotationNumber(`COT-${Math.floor(1000 + Math.random() * 9000)}`);
@@ -90,9 +90,12 @@ export default function EditorPage() {
         const blob = await res.blob();
         await downloadPDFBlob(blob, `cotizacion-${quotationNumber}.pdf`);
         success('Descarga completa');
+      } else {
+        const body = await res.json().catch(() => ({}));
+        error(body.details || body.error || 'Error al generar el PDF');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      error(e?.message || 'Error al generar el PDF');
     } finally {
       setIsGenerating(false);
     }

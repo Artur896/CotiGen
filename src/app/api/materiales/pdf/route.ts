@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     browser = await puppeteer.launch({
       args: chromium.args,
       executablePath: await chromium.executablePath(),
-      headless: true,
+      headless: 'shell',
     });
   }
   try {

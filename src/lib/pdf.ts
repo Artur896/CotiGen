@@ -9,7 +9,7 @@ export async function generatePDF(html: string) {
     browser = await puppeteer.launch({
       args: chromium.args,
       executablePath: await chromium.executablePath(),
-      headless: true,
+      headless: 'shell',
     });
   }
 
