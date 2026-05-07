@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { BottomNav } from '@/components/BottomNav';
 import { Download, Eye, PenLine, Plus, Trash2, ChevronDown, FileText } from 'lucide-react';
 import { useToast } from '@/components/shared/Toast';
-import { downloadPDFBlob } from '@/lib/pdf';
+import { downloadPDFBlob } from '@/lib/pdf-client';
 
 interface LineItem {
   id: string;

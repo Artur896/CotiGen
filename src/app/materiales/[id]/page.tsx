@@ -10,7 +10,7 @@ import { ArrowLeft, Save, FileDown, Plus, Trash2, Search, X } from 'lucide-react
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { CATEGORIES } from '@/lib/data/defaultCatalog';
 import { useToast } from '@/components/shared/Toast';
-import { downloadPDFBlob } from '@/lib/pdf';
+import { downloadPDFBlob } from '@/lib/pdf-client';
 
 function genLineId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
