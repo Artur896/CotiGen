@@ -1,11 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    outputFileTracingIncludes: {
-      '/api/generate-pdf': ['./node_modules/@sparticuz/chromium/**/*'],
-      '/api/materiales/pdf': ['./node_modules/@sparticuz/chromium/**/*'],
-    },
+  outputFileTracingIncludes: {
+    '/api/generate-pdf': ['./node_modules/@sparticuz/chromium/**/*'],
+    '/api/materiales/pdf': ['./node_modules/@sparticuz/chromium/**/*'],
   },
 };
 
