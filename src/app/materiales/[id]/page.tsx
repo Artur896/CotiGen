@@ -10,6 +10,7 @@ import { ArrowLeft, Save, FileDown, Plus, Trash2, Search, X } from 'lucide-react
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { CATEGORIES } from '@/lib/data/defaultCatalog';
 import { useToast } from '@/components/shared/Toast';
+import { downloadPDFBlob } from '@/lib/pdf';
 
 function genLineId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -206,12 +207,7 @@ export default function ListaEditorPage({
       });
       if (!res.ok) { setError('Error al generar el PDF.'); return; }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `lista-${String(listData.numero).padStart(4, '0')}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadPDFBlob(blob, `lista-${String(listData.numero).padStart(4, '0')}.pdf`);
       success('Descarga completa');
       if (isNew) router.replace(`/materiales/${listData.id}`);
     } finally {

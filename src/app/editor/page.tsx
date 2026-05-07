@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { BottomNav } from '@/components/BottomNav';
 import { Download, Eye, PenLine, Plus, Trash2, ChevronDown, FileText } from 'lucide-react';
 import { useToast } from '@/components/shared/Toast';
+import { downloadPDFBlob } from '@/lib/pdf';
 
 interface LineItem {
   id: string;
@@ -87,12 +88,7 @@ export default function EditorPage() {
       });
       if (res.ok) {
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `cotizacion-${quotationNumber}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        await downloadPDFBlob(blob, `cotizacion-${quotationNumber}.pdf`);
         success('Descarga completa');
       }
     } catch (e) {
