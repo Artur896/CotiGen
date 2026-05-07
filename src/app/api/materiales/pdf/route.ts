@@ -134,24 +134,25 @@ function buildHtml(list: MaterialList): string {
 }
 
 export async function POST(req: NextRequest) {
-  const list = await req.json() as MaterialList;
-
-  let browser;
-  if (process.env.NODE_ENV === 'development' || !process.env.VERCEL) {
-    const puppeteer = (await import('puppeteer')).default;
-    browser = await puppeteer.launch({ headless: true });
-  } else {
-    const chromium = (await import('@sparticuz/chromium')).default;
-    const puppeteer = (await import('puppeteer-core')).default;
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath(),
-      headless: 'shell',
-    });
-  }
+  let browser: any;
   try {
+    const list = await req.json() as MaterialList;
+
+    if (process.env.NODE_ENV === 'development' || !process.env.VERCEL) {
+      const puppeteer = (await import('puppeteer')).default;
+      browser = await puppeteer.launch({ headless: true });
+    } else {
+      const chromium = (await import('@sparticuz/chromium')).default;
+      const puppeteer = (await import('puppeteer-core')).default;
+      browser = await puppeteer.launch({
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
+        headless: 'shell',
+      });
+    }
+
     const page = await browser.newPage();
-    await page.setContent(buildHtml(list), { waitUntil: 'networkidle0' });
+    await page.setContent(buildHtml(list), { waitUntil: 'load', timeout: 15000 });
     const pdf = await page.pdf({
       format: 'A4',
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
@@ -163,7 +164,10 @@ export async function POST(req: NextRequest) {
         'Content-Disposition': `attachment; filename="lista-materiales.pdf"`,
       },
     });
+  } catch (error: any) {
+    console.error('Error generating materiales PDF:', error);
+    return NextResponse.json({ error: 'Fallo al generar PDF', details: error.message }, { status: 500 });
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
   }
 }
