@@ -5,10 +5,6 @@ import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { MaterialList, CreateListInput } from '@/lib/types/material';
 
-function genLineId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
 function dbRowToList(row: any): MaterialList {
   return {
     id: row.id,
@@ -27,6 +23,8 @@ function dbRowToList(row: any): MaterialList {
         cantidad: Number(item.cantidad),
         unidad: item.unidad,
       })),
+    obraId: row.obra_id ?? null,
+    revision: row.revision ?? {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -56,7 +54,6 @@ export function useLists() {
   const create = useCallback(async (input: CreateListInput): Promise<MaterialList | null> => {
     if (!user) return null;
 
-    // Get next numero
     const { data: existing } = await supabase
       .from('listas')
       .select('numero')
@@ -67,7 +64,13 @@ export function useLists() {
 
     const { data: lista, error: listError } = await supabase
       .from('listas')
-      .insert({ user_id: user.id, numero, nombre: input.nombre, notas: input.notas })
+      .insert({
+        user_id: user.id,
+        numero,
+        nombre: input.nombre,
+        notas: input.notas,
+        obra_id: input.obraId ?? null,
+      })
       .select()
       .single();
 
@@ -87,7 +90,7 @@ export function useLists() {
     }
 
     await fetchLists();
-    
+
     const { data: newList } = await supabase
       .from('listas')
       .select('*, lista_items(*)')
@@ -132,6 +135,11 @@ export function useLists() {
     return updatedList ? dbRowToList(updatedList) : null;
   }, [fetchLists]);
 
+  const updateRevision = useCallback(async (id: string, revision: Record<string, boolean>) => {
+    await supabase.from('listas').update({ revision }).eq('id', id);
+    setLists((prev) => prev.map((l) => l.id === id ? { ...l, revision } : l));
+  }, []);
+
   const remove = useCallback(async (id: string) => {
     await supabase.from('listas').delete().eq('id', id);
     setLists((prev) => prev.filter((l) => l.id !== id));
@@ -141,5 +149,5 @@ export function useLists() {
     return lists.find((l) => l.id === id) ?? null;
   }, [lists]);
 
-  return { lists, ready, create, update, remove, getById };
+  return { lists, ready, create, update, updateRevision, remove, getById };
 }

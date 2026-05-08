@@ -1,15 +1,15 @@
 import Link from 'next/link';
-import { FileText, Package, ChevronRight } from 'lucide-react';
+import { FileText, HardHat, ChevronRight } from 'lucide-react';
 
 const CARDS = [
   {
-    href: '/materiales',
-    icon: Package,
+    href: '/obras',
+    icon: HardHat,
     iconBg: 'bg-emerald-100',
     iconColor: 'text-emerald-600',
     border: 'active:border-emerald-400',
-    title: 'Lista de Materiales',
-    desc: 'Crea listas para entregar a clientes',
+    title: 'Mis Obras',
+    desc: 'Organiza listas de materiales por obra',
   },
   {
     href: '/editor',

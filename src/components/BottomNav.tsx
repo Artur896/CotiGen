@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, FileText } from 'lucide-react';
+import { HardHat, FileText } from 'lucide-react';
 
 const TABS = [
-  { href: '/materiales', icon: Package,  label: 'Listas',   active: 'text-emerald-600', dot: 'bg-emerald-600' },
-  { href: '/editor',     icon: FileText, label: 'Cotizar',  active: 'text-indigo-600',  dot: 'bg-indigo-600'  },
+  { href: '/obras',  icon: HardHat,  label: 'Obras',   active: 'text-emerald-600', dot: 'bg-emerald-600' },
+  { href: '/editor', icon: FileText, label: 'Cotizar', active: 'text-indigo-600',  dot: 'bg-indigo-600'  },
 ];
 
 export function BottomNav() {
@@ -19,7 +19,7 @@ export function BottomNav() {
     >
       <div className="flex h-14">
         {TABS.map(({ href, icon: Icon, label, active, dot }) => {
-          const isActive = pathname === href;
+          const isActive = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={href}

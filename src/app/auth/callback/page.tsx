@@ -23,13 +23,13 @@ export default function AuthCallbackPage() {
     // Éxito: esperar a que Supabase procese la sesión
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        router.replace('/materiales');
+        router.replace('/');
       }
     });
 
     // Por si la sesión ya está lista
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/materiales');
+      if (session) router.replace('/');
     });
 
     return () => subscription.unsubscribe();

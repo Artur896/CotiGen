@@ -23,12 +23,13 @@ export default function ListaEditorPage({
   searchParams,
 }: {
   params: Promise<PageParams>;
-  searchParams: Promise<{ cat?: string }>;
+  searchParams: Promise<{ cat?: string; obra_id?: string }>;
 }) {
   const { id } = use(params);
-  const { cat } = use(searchParams);
+  const { cat, obra_id } = use(searchParams);
   const isNew = id === 'nueva';
   const categoria = cat ? decodeURIComponent(cat) : 'General';
+  const obraId = obra_id ?? null;
   const router = useRouter();
 
   const { ready: listsReady, create, update, getById } = useLists();
@@ -167,13 +168,14 @@ export default function ListaEditorPage({
   const removeLine = (lineId: string) =>
     setItems((prev) => prev.filter((i) => i.lineId !== lineId));
 
-  const buildPayload = (): Omit<MaterialList, 'id' | 'numero' | 'createdAt' | 'updatedAt'> => ({
+  const buildPayload = (): import('@/lib/types/material').CreateListInput => ({
     nombre: nombre.trim(),
     cliente: '',
     telefono: '',
     fecha: new Date().toISOString().split('T')[0],
     notas: notas.trim(),
     items,
+    obraId: obraId,
   });
 
   const handleSave = async () => {
@@ -184,7 +186,7 @@ export default function ListaEditorPage({
       const result = isNew ? await create(buildPayload()) : await update(id, buildPayload());
       if (!result) { setError('Error al guardar. Intenta de nuevo.'); return; }
       success('Se guardó correctamente');
-      router.push('/materiales');
+      router.push(obraId ? `/obras/${obraId}` : '/materiales');
     } finally {
       setSaving(false);
     }
@@ -226,7 +228,7 @@ export default function ListaEditorPage({
       {/* Header */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-10">
         <div className="px-3 h-14 flex items-center gap-2">
-          <Link href="/materiales" className="w-9 h-9 flex items-center justify-center text-slate-400 btn-press rounded-xl active:bg-slate-100 shrink-0">
+          <Link href={obraId ? `/obras/${obraId}` : '/materiales'} className="w-9 h-9 flex items-center justify-center text-slate-400 btn-press rounded-xl active:bg-slate-100 shrink-0">
             <ArrowLeft size={20} />
           </Link>
           <div className="flex-1 min-w-0">
