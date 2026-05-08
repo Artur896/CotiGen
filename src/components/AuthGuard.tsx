@@ -26,7 +26,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     if (user && isPublic && !redirected.current) {
       redirected.current = true;
-      router.replace('/materiales');
+      router.replace('/');
       return;
     }
 
