@@ -28,7 +28,7 @@ export default function MaterialesPage() {
   const router = useRouter();
   const { lists, ready, remove } = useLists();
   const { user, signOut } = useAuth();
-  const { scucess } = useToast();
+  const { success } = useToast();
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<MaterialList | null>(null);
   const [showCatPicker, setShowCatPicker] = useState(false);
