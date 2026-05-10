@@ -66,15 +66,56 @@ export default function ListaEditorPage({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Restore draft for new lists on mount
+  useEffect(() => {
+    if (!isNew) return;
+    try {
+      const raw = localStorage.getItem('lista_draft_nueva');
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.nombre) setNombre(draft.nombre);
+        if (draft.notas) setNotas(draft.notas);
+        if (Array.isArray(draft.items) && draft.items.length > 0) setItems(draft.items);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (isNew || !listsReady) return;
     const existing = getById(id);
     if (!existing) { router.replace('/materiales'); return; }
-    setNombre(existing.nombre ?? '');
-    setNotas(existing.notas);
-    setItems(existing.items);
+
+    // Prefer localStorage draft (unsaved changes) over DB data
+    let restored = false;
+    try {
+      const raw = localStorage.getItem(`lista_draft_${id}`);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        setNombre(draft.nombre ?? existing.nombre ?? '');
+        setNotas(draft.notas ?? existing.notas);
+        setItems(draft.items ?? existing.items);
+        restored = true;
+      }
+    } catch {}
+    if (!restored) {
+      setNombre(existing.nombre ?? '');
+      setNotas(existing.notas);
+      setItems(existing.items);
+    }
     setLoaded(true);
   }, [id, isNew, listsReady, getById, router]);
+
+  // Auto-save draft to localStorage (debounced 1.5 s)
+  useEffect(() => {
+    if (!loaded) return;
+    if (!nombre.trim() && !notas.trim() && items.length === 0) return;
+    const key = `lista_draft_${id}`;
+    const timer = setTimeout(() => {
+      try { localStorage.setItem(key, JSON.stringify({ nombre, notas, items })); } catch {}
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [nombre, notas, items, loaded, id]);
 
   // Items del catálogo base filtrados por categoría
   // Los materiales custom del usuario siempre se incluyen sin importar la categoría
@@ -185,6 +226,7 @@ export default function ListaEditorPage({
     try {
       const result = isNew ? await create(buildPayload()) : await update(id, buildPayload());
       if (!result) { setError('Error al guardar. Intenta de nuevo.'); return; }
+      try { localStorage.removeItem(`lista_draft_${id}`); } catch {}
       success('Se guardó correctamente');
       router.push(obraId ? `/obras/${obraId}` : '/materiales');
     } finally {
@@ -214,6 +256,7 @@ export default function ListaEditorPage({
       }
       const blob = await res.blob();
       await downloadPDFBlob(blob, `lista-${String(listData.numero).padStart(4, '0')}.pdf`);
+      try { localStorage.removeItem(`lista_draft_${id}`); } catch {}
       success('Descarga completa');
       if (isNew) router.replace(`/materiales/${listData.id}`);
     } finally {
