@@ -2,7 +2,7 @@
   "name": "CotiGen",
   "short_name": "CotiGen",
   "description": "Listas de materiales y cotizaciones",
-  "start_url": "/materiales",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
