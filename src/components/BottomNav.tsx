@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, HardHat, FileText } from 'lucide-react';
+import { Home, HardHat, FileText, Users } from 'lucide-react';
 
 const TABS = [
-  { href: '/',       icon: Home,     label: 'Inicio',  active: 'text-slate-700',   dot: 'bg-slate-700'   },
-  { href: '/obras',  icon: HardHat,  label: 'Obras',   active: 'text-emerald-600', dot: 'bg-emerald-600' },
-  { href: '/editor', icon: FileText, label: 'Cotizar', active: 'text-indigo-600',  dot: 'bg-indigo-600'  },
+  { href: '/',        icon: Home,     label: 'Inicio',  active: 'text-slate-700',   dot: 'bg-slate-700'   },
+  { href: '/obras',   icon: HardHat,  label: 'Obras',   active: 'text-emerald-600', dot: 'bg-emerald-600' },
+  { href: '/amigos',  icon: Users,    label: 'Amigos',  active: 'text-violet-600',  dot: 'bg-violet-600'  },
+  { href: '/editor',  icon: FileText, label: 'Cotizar', active: 'text-indigo-600',  dot: 'bg-indigo-600'  },
 ];
 
 export function BottomNav() {

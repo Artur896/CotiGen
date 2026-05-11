@@ -8,8 +8,80 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { Obra } from '@/lib/types/material';
 import { BottomNav } from '@/components/BottomNav';
 import { InlineLoader } from '@/components/LoadingScreen';
-import { HardHat, Plus, Trash2, ChevronRight, LogOut, X, CheckCircle2 } from 'lucide-react';
+import { HardHat, Plus, Trash2, ChevronRight, LogOut, X, CheckCircle2, Users } from 'lucide-react';
 import { useToast } from '@/components/shared/Toast';
+
+function ObraCard({
+  obra,
+  getObraStats,
+  onOpen,
+  onDelete,
+  shared = false,
+}: {
+  obra: Obra;
+  getObraStats: (id: string) => { listCount: number; totalItems: number; doneItems: number };
+  onOpen: () => void;
+  onDelete?: () => void;
+  shared?: boolean;
+}) {
+  const { listCount, totalItems, doneItems } = getObraStats(obra.id);
+  const pct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
+  const allDone = totalItems > 0 && doneItems === totalItems;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+      <button
+        onClick={onOpen}
+        className="w-full flex items-center px-4 py-4 gap-3 text-left btn-press active:bg-slate-50"
+      >
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+          allDone ? 'bg-emerald-100' : shared ? 'bg-violet-50' : 'bg-slate-100'
+        }`}>
+          {allDone
+            ? <CheckCircle2 size={22} className="text-emerald-600" />
+            : shared
+              ? <Users size={20} className="text-violet-500" />
+              : <HardHat size={22} className="text-slate-400" />
+          }
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-slate-900 truncate">{obra.nombre}</p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {shared && obra.ownerNombre && (
+              <span className="text-violet-500 font-semibold">{obra.ownerNombre} · </span>
+            )}
+            {listCount} lista{listCount !== 1 ? 's' : ''}
+            {totalItems > 0 && (
+              <span className={`ml-2 font-semibold ${allDone ? 'text-emerald-600' : 'text-amber-500'}`}>
+                · {doneItems}/{totalItems} materiales
+              </span>
+            )}
+          </p>
+          {totalItems > 0 && (
+            <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${allDone ? 'bg-emerald-500' : 'bg-amber-400'}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          )}
+        </div>
+        <ChevronRight size={18} className="text-slate-300 shrink-0" />
+      </button>
+
+      {!shared && onDelete && (
+        <div className="flex border-t border-slate-50">
+          <button
+            onClick={onDelete}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-red-400 active:bg-red-50 btn-press"
+          >
+            <Trash2 size={14} /> Eliminar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ObrasPage() {
   const router = useRouter();
@@ -22,6 +94,9 @@ export default function ObrasPage() {
   const [newNombre, setNewNombre] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Obra | null>(null);
+
+  const ownObras = obras.filter((o) => !o.esCompartida);
+  const sharedObras = obras.filter((o) => o.esCompartida);
 
   const ready = obrasReady && listsReady;
 
@@ -93,61 +168,19 @@ export default function ObrasPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {obras.map((obra) => {
-              const { listCount, totalItems, doneItems } = getObraStats(obra.id);
-              const pct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
-              const allDone = totalItems > 0 && doneItems === totalItems;
+            {ownObras.length > 0 && (
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide px-1">
+                Mis obras ({ownObras.length})
+              </p>
+            )}
+            {ownObras.map((obra) => <ObraCard key={obra.id} obra={obra} getObraStats={getObraStats} onOpen={() => router.push(`/obras/${obra.id}`)} onDelete={() => setDeleteTarget(obra)} />)}
 
-              return (
-                <div
-                  key={obra.id}
-                  className="bg-white rounded-2xl border border-slate-100 overflow-hidden"
-                >
-                  <button
-                    onClick={() => router.push(`/obras/${obra.id}`)}
-                    className="w-full flex items-center px-4 py-4 gap-3 text-left btn-press active:bg-slate-50"
-                  >
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                      allDone ? 'bg-emerald-100' : 'bg-slate-100'
-                    }`}>
-                      {allDone
-                        ? <CheckCircle2 size={22} className="text-emerald-600" />
-                        : <HardHat size={22} className="text-slate-400" />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-900 truncate">{obra.nombre}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {listCount} lista{listCount !== 1 ? 's' : ''}
-                        {totalItems > 0 && (
-                          <span className={`ml-2 font-semibold ${allDone ? 'text-emerald-600' : 'text-amber-500'}`}>
-                            · {doneItems}/{totalItems} materiales
-                          </span>
-                        )}
-                      </p>
-                      {totalItems > 0 && (
-                        <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${allDone ? 'bg-emerald-500' : 'bg-amber-400'}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <ChevronRight size={18} className="text-slate-300 shrink-0" />
-                  </button>
-
-                  <div className="flex border-t border-slate-50">
-                    <button
-                      onClick={() => setDeleteTarget(obra)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-red-400 active:bg-red-50 btn-press"
-                    >
-                      <Trash2 size={14} /> Eliminar
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+            {sharedObras.length > 0 && (
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide px-1 mt-4">
+                Compartidas conmigo ({sharedObras.length})
+              </p>
+            )}
+            {sharedObras.map((obra) => <ObraCard key={obra.id} obra={obra} getObraStats={getObraStats} onOpen={() => router.push(`/obras/${obra.id}`)} shared />)}
           </div>
         )}
       </main>

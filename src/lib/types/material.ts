@@ -17,6 +17,9 @@ export interface Obra {
   id: string;
   nombre: string;
   createdAt: string;
+  esCompartida?: boolean;
+  ownerId?: string;
+  ownerNombre?: string;
 }
 
 export interface MaterialList {

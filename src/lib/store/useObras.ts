@@ -13,12 +13,39 @@ export function useObras() {
   const fetchObras = useCallback(async () => {
     if (!user) { setObras([]); setReady(true); return; }
     setReady(false);
-    const { data } = await supabase
-      .from('obras')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (data) setObras(data.map((r) => ({ id: r.id, nombre: r.nombre, createdAt: r.created_at })));
+
+    const [{ data: ownData }, { data: collabRows }] = await Promise.all([
+      supabase.from('obras').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('obra_colaboradores').select('obra_id').eq('colaborador_id', user.id),
+    ]);
+
+    const collabIds = (collabRows ?? []).map((r) => r.obra_id);
+    let sharedData: any[] = [];
+    if (collabIds.length > 0) {
+      const { data } = await supabase.from('obras').select('*').in('id', collabIds).order('created_at', { ascending: false });
+      sharedData = data ?? [];
+    }
+
+    let ownerMap = new Map<string, string>();
+    const ownerIds = [...new Set(sharedData.map((o) => o.user_id))];
+    if (ownerIds.length > 0) {
+      const { data: ownerProfiles } = await supabase.from('profiles').select('id, nombre').in('id', ownerIds);
+      ownerMap = new Map((ownerProfiles ?? []).map((p) => [p.id, p.nombre]));
+    }
+
+    const allObras: Obra[] = [
+      ...(ownData ?? []).map((r): Obra => ({ id: r.id, nombre: r.nombre, createdAt: r.created_at })),
+      ...sharedData.map((r): Obra => ({
+        id: r.id,
+        nombre: r.nombre,
+        createdAt: r.created_at,
+        esCompartida: true,
+        ownerId: r.user_id,
+        ownerNombre: ownerMap.get(r.user_id) ?? 'Desconocido',
+      })),
+    ];
+
+    setObras(allObras);
     setReady(true);
   }, [user]);
 
