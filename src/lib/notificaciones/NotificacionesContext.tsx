@@ -28,6 +28,15 @@ function rowToNotif(r: any): Notificacion {
   };
 }
 
+function urlBase64ToUint8Array(base64: string): ArrayBuffer {
+  const pad = '='.repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(b64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr.buffer;
+}
+
 function showBrowserNotif(titulo: string, cuerpo: string | null) {
   if (typeof window === 'undefined') return;
   if (Notification.permission !== 'granted') return;
@@ -58,13 +67,38 @@ export function NotificacionesProvider({ children }: { children: ReactNode }) {
   // Initial fetch
   useEffect(() => { fetchNotifs(); }, [fetchNotifs]);
 
-  // Request browser notification permission once
+  // Request permission + register Web Push subscription
   useEffect(() => {
     if (!user) return;
     if (typeof window === 'undefined') return;
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+
+    const registerPush = async () => {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+      const permission = Notification.permission === 'default'
+        ? await Notification.requestPermission()
+        : Notification.permission;
+
+      if (permission !== 'granted') return;
+
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const existing = await reg.pushManager.getSubscription();
+        const sub = existing ?? await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(
+            process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+          ),
+        });
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: sub.toJSON(), userId: user.id }),
+        });
+      } catch { /* ignore — push not critical */ }
+    };
+
+    registerPush();
   }, [user]);
 
   // Realtime subscription — fires on every INSERT to notificaciones
@@ -109,6 +143,7 @@ export function NotificacionesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unreadCount = notificaciones.filter((n) => !n.leida).length;
+
 
   return (
     <NotificacionesContext.Provider value={{ notificaciones, unreadCount, markAsRead, markAllAsRead, remove }}>

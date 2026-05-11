@@ -30,3 +30,31 @@ self.addEventListener('fetch', (e) => {
       .catch(() => caches.match(e.request).then((r) => r ?? Response.error()))
   );
 });
+
+// ── Web Push ──────────────────────────────────────────────
+self.addEventListener('push', (e) => {
+  let payload = { titulo: 'CotiGen', cuerpo: '', url: '/' };
+  try { payload = { ...payload, ...e.data.json() }; } catch {}
+
+  e.waitUntil(
+    self.registration.showNotification(payload.titulo, {
+      body: payload.cuerpo,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      vibrate: [150, 50, 150],
+      data: { url: payload.url },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url ?? '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url.includes(self.location.origin));
+      if (existing) return existing.focus().then((c) => c.navigate(url));
+      return clients.openWindow(url);
+    })
+  );
+});
