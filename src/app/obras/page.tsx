@@ -10,6 +10,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { InlineLoader } from '@/components/LoadingScreen';
 import { HardHat, Plus, Trash2, ChevronRight, LogOut, X, CheckCircle2, Users } from 'lucide-react';
 import { useToast } from '@/components/shared/Toast';
+import { NotificationBell } from '@/components/NotificationBell';
 
 function ObraCard({
   obra,
@@ -88,7 +89,7 @@ export default function ObrasPage() {
   const { obras, ready: obrasReady, create, remove } = useObras();
   const { lists, ready: listsReady } = useLists();
   const { user, signOut } = useAuth();
-  const { success } = useToast();
+  const { success, error: showError } = useToast();
 
   const [showNewObra, setShowNewObra] = useState(false);
   const [newNombre, setNewNombre] = useState('');
@@ -109,6 +110,8 @@ export default function ObrasPage() {
       setNewNombre('');
       setShowNewObra(false);
       router.push(`/obras/${obra.id}`);
+    } else {
+      showError('No se pudo crear la obra. Verifica tu conexión.');
     }
   };
 
@@ -137,6 +140,7 @@ export default function ObrasPage() {
               {obras.length}
             </span>
           )}
+          <NotificationBell />
           <button
             onClick={() => signOut()}
             className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 active:bg-slate-100 btn-press"

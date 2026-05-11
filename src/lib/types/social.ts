@@ -14,6 +14,19 @@ export interface Amigo {
   profile?: Profile;
 }
 
+export type NotificacionTipo = 'friend_request' | 'friend_accepted' | 'obra_compartida';
+
+export interface Notificacion {
+  id: string;
+  userId: string;
+  tipo: NotificacionTipo;
+  titulo: string;
+  cuerpo: string | null;
+  data: Record<string, string>;
+  leida: boolean;
+  createdAt: string;
+}
+
 export interface Colaborador {
   id: string;
   obraId: string;

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, HardHat, FileText, Users } from 'lucide-react';
+import { useNotificaciones } from '@/lib/notificaciones/NotificacionesContext';
 
 const TABS = [
   { href: '/',        icon: Home,     label: 'Inicio',  active: 'text-slate-700',   dot: 'bg-slate-700'   },
@@ -13,6 +14,7 @@ const TABS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { unreadCount } = useNotificaciones();
 
   return (
     <nav
@@ -22,13 +24,21 @@ export function BottomNav() {
       <div className="flex h-14">
         {TABS.map(({ href, icon: Icon, label, active, dot }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/');
+          const showBadge = href === '/amigos' && unreadCount > 0;
           return (
             <Link
               key={href}
               href={href}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 btn-press ${isActive ? active : 'text-slate-400'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 btn-press relative ${isActive ? active : 'text-slate-400'}`}
             >
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+              <div className="relative">
+                <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                {showBadge && (
+                  <span className="absolute -top-1 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
               <span className="text-[10px] font-bold tracking-wide">{label}</span>
               {isActive && (
                 <span className={`absolute bottom-[calc(env(safe-area-inset-bottom)+2px)] w-8 h-0.5 rounded-full ${dot}`} />

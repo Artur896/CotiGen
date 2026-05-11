@@ -6,6 +6,7 @@ import { InstallBanner } from '@/components/InstallBanner';
 import { AuthProvider } from '@/lib/auth/AuthContext';
 import { AuthGuard } from '@/components/AuthGuard';
 import { ToastProvider } from '@/components/shared/Toast';
+import { NotificacionesProvider } from '@/lib/notificaciones/NotificacionesContext';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' });
 
@@ -40,7 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastProvider>
           <AuthProvider>
             <AuthGuard>
-              {children}
+              <NotificacionesProvider>
+                {children}
+              </NotificacionesProvider>
             </AuthGuard>
           </AuthProvider>
         </ToastProvider>

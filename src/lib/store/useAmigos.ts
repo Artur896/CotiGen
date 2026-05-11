@@ -53,6 +53,25 @@ export function useAmigos() {
 
   useEffect(() => { fetchAmigos(); }, [fetchAmigos]);
 
+  // Live updates: re-fetch when a new friend request arrives or is accepted
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`amigos_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'amigos', filter: `amigo_id=eq.${user.id}` },
+        () => fetchAmigos()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'amigos', filter: `user_id=eq.${user.id}` },
+        () => fetchAmigos()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchAmigos]);
+
   const sendRequest = useCallback(async (amigoId: string, alias: string): Promise<{ error?: string }> => {
     if (!user) return { error: 'No autenticado' };
     if (amigoId === user.id) return { error: 'No puedes agregarte a ti mismo' };

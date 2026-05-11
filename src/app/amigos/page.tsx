@@ -10,6 +10,7 @@ import { QRScanner } from '@/components/QRScanner';
 import { InlineLoader } from '@/components/LoadingScreen';
 import { useToast } from '@/components/shared/Toast';
 import { QRCodeSVG } from 'qrcode.react';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   Users, QrCode, X, UserCheck, UserX, Pencil, Trash2, Copy, Check,
   Bell, ChevronRight, ScanLine, UserPlus, Loader2,
@@ -159,22 +160,19 @@ export default function AmigosPage() {
               {pendingIncoming.length}
             </span>
           )}
-          {/* Scan button */}
           <button
             onClick={() => setShowScanner(true)}
             className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 active:bg-slate-100 btn-press"
-            title="Escanear QR"
           >
             <ScanLine size={20} />
           </button>
-          {/* My QR button */}
           <button
             onClick={() => setShowQR(true)}
             className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 active:bg-slate-100 btn-press"
-            title="Mi código QR"
           >
             <QrCode size={20} />
           </button>
+          <NotificationBell />
         </div>
       </header>
 
