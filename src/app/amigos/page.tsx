@@ -1,16 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useAmigos } from '@/lib/store/useAmigos';
-import { Amigo } from '@/lib/types/social';
+import { Amigo, Profile } from '@/lib/types/social';
+import { supabase } from '@/lib/supabase/client';
 import { BottomNav } from '@/components/BottomNav';
+import { QRScanner } from '@/components/QRScanner';
 import { InlineLoader } from '@/components/LoadingScreen';
 import { useToast } from '@/components/shared/Toast';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   Users, QrCode, X, UserCheck, UserX, Pencil, Trash2, Copy, Check,
-  Bell, ChevronRight,
+  Bell, ChevronRight, ScanLine, UserPlus, Loader2,
 } from 'lucide-react';
 
 function initials(name: string) {
@@ -28,11 +30,21 @@ function AmigoAvatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }
 
 export default function AmigosPage() {
   const { user } = useAuth();
-  const { amigos, pendingIncoming, ready, accept, reject, remove, updateAlias, refetch } = useAmigos();
+  const { amigos, pendingIncoming, ready, accept, reject, remove, updateAlias, sendRequest } = useAmigos();
   const { success, error: showError, info } = useToast();
 
+  // QR modal (my own QR)
   const [showQR, setShowQR] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Scanner
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanResult, setScanResult] = useState<{ profile: Profile; uid: string } | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [aliasForScan, setAliasForScan] = useState('');
+  const [sendingRequest, setSendingRequest] = useState(false);
+
+  // Amigo detail sheet
   const [selectedAmigo, setSelectedAmigo] = useState<Amigo | null>(null);
   const [aliasInput, setAliasInput] = useState('');
   const [editingAlias, setEditingAlias] = useState(false);
@@ -41,6 +53,51 @@ export default function AmigosPage() {
 
   const addLink = typeof window !== 'undefined' ? `${window.location.origin}/agregar?uid=${user?.id}` : '';
 
+  /* ---- QR scan handler ---- */
+  const handleScanResult = useCallback(async (text: string) => {
+    setShowScanner(false);
+
+    // Parse the uid from the scanned URL
+    let uid: string | null = null;
+    try {
+      const url = new URL(text);
+      uid = url.searchParams.get('uid');
+    } catch {
+      showError('El código QR no es válido');
+      return;
+    }
+
+    if (!uid) { showError('El código QR no es válido'); return; }
+    if (uid === user?.id) { info('Este es tu propio código QR'); return; }
+
+    const alreadyFriend = amigos.some((a) => a.amigoId === uid);
+    if (alreadyFriend) { info('Ya son amigos'); return; }
+
+    setLoadingProfile(true);
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, nombre, email')
+      .eq('id', uid)
+      .single();
+    setLoadingProfile(false);
+
+    if (!profile) { showError('Usuario no encontrado'); return; }
+
+    setScanResult({ profile, uid });
+    setAliasForScan('');
+  }, [user, amigos, showError, info]);
+
+  const handleSendFromScan = async () => {
+    if (!scanResult) return;
+    setSendingRequest(true);
+    const { error: err } = await sendRequest(scanResult.uid, aliasForScan);
+    setSendingRequest(false);
+    if (err) { showError(err); return; }
+    setScanResult(null);
+    success(`Solicitud enviada a ${scanResult.profile.nombre}`);
+  };
+
+  /* ---- Copy link ---- */
   const handleCopy = async () => {
     await navigator.clipboard.writeText(addLink);
     setCopied(true);
@@ -48,10 +105,11 @@ export default function AmigosPage() {
     info('Enlace copiado');
   };
 
+  /* ---- Accept / Reject ---- */
   const handleAccept = async (a: Amigo) => {
     const { error: err } = await accept(a.id, a.userId);
     if (err) showError(err);
-    else success(`${a.profile?.nombre ?? 'Usuario'} agregado como amigo`);
+    else success(`${a.profile?.nombre ?? 'Usuario'} agregado`);
   };
 
   const handleReject = async (a: Amigo) => {
@@ -59,6 +117,7 @@ export default function AmigosPage() {
     info('Solicitud rechazada');
   };
 
+  /* ---- Amigo sheet ---- */
   const openAmigoSheet = (a: Amigo) => {
     setSelectedAmigo(a);
     setAliasInput(a.alias ?? '');
@@ -89,17 +148,26 @@ export default function AmigosPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-10">
-        <div className="px-4 h-14 flex items-center gap-3">
+        <div className="px-4 h-14 flex items-center gap-2">
           <Users size={20} className="text-violet-600 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-slate-900 leading-tight">Amigos</p>
             {user && <p className="text-xs text-slate-400 truncate">{user.nombre}</p>}
           </div>
           {pendingIncoming.length > 0 && (
-            <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+            <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
               {pendingIncoming.length}
             </span>
           )}
+          {/* Scan button */}
+          <button
+            onClick={() => setShowScanner(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 active:bg-slate-100 btn-press"
+            title="Escanear QR"
+          >
+            <ScanLine size={20} />
+          </button>
+          {/* My QR button */}
           <button
             onClick={() => setShowQR(true)}
             className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 active:bg-slate-100 btn-press"
@@ -132,16 +200,10 @@ export default function AmigosPage() {
                         <p className="font-bold text-slate-900 text-sm truncate">{a.profile?.nombre ?? 'Usuario'}</p>
                         <p className="text-xs text-slate-400 truncate">{a.profile?.email}</p>
                       </div>
-                      <button
-                        onClick={() => handleReject(a)}
-                        className="w-8 h-8 flex items-center justify-center rounded-xl text-red-400 active:bg-red-50 btn-press"
-                      >
+                      <button onClick={() => handleReject(a)} className="w-8 h-8 flex items-center justify-center rounded-xl text-red-400 active:bg-red-50 btn-press">
                         <UserX size={18} />
                       </button>
-                      <button
-                        onClick={() => handleAccept(a)}
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-violet-100 text-violet-700 active:bg-violet-200 btn-press"
-                      >
+                      <button onClick={() => handleAccept(a)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-violet-100 text-violet-700 active:bg-violet-200 btn-press">
                         <UserCheck size={18} />
                       </button>
                     </div>
@@ -158,20 +220,28 @@ export default function AmigosPage() {
                 </p>
               )}
               {amigos.length === 0 && pendingIncoming.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-4">
                     <Users size={36} className="text-slate-300" />
                   </div>
                   <p className="font-bold text-slate-700 text-lg">Sin amigos aún</p>
                   <p className="text-slate-400 text-sm mt-1 mb-6 max-w-xs">
-                    Comparte tu código QR para que otros te agreguen
+                    Escanea el QR de alguien o comparte el tuyo
                   </p>
-                  <button
-                    onClick={() => setShowQR(true)}
-                    className="flex items-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-2xl font-bold btn-press"
-                  >
-                    <QrCode size={18} /> Ver mi QR
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowScanner(true)}
+                      className="flex items-center gap-2 bg-violet-600 text-white px-5 py-3 rounded-2xl font-bold btn-press text-sm"
+                    >
+                      <ScanLine size={16} /> Escanear
+                    </button>
+                    <button
+                      onClick={() => setShowQR(true)}
+                      className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-3 rounded-2xl font-bold btn-press text-sm"
+                    >
+                      <QrCode size={16} /> Mi QR
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -198,7 +268,82 @@ export default function AmigosPage() {
         )}
       </main>
 
-      {/* QR Modal */}
+      {/* ── QR Scanner (fullscreen) ── */}
+      {showScanner && (
+        <QRScanner
+          onScan={handleScanResult}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
+      {/* ── Loading profile after scan ── */}
+      {loadingProfile && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl px-6 py-5 flex items-center gap-3 shadow-xl">
+            <Loader2 size={20} className="text-violet-600 animate-spin" />
+            <p className="font-semibold text-slate-700">Buscando usuario...</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add friend sheet (post-scan) ── */}
+      {scanResult && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end"
+          onClick={() => setScanResult(null)}
+        >
+          <div
+            className="bg-white w-full rounded-t-3xl p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+
+            {/* Profile */}
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-violet-100 text-violet-700 font-extrabold text-xl flex items-center justify-center shrink-0">
+                {initials(scanResult.profile.nombre)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-extrabold text-slate-900 text-lg leading-tight">{scanResult.profile.nombre}</p>
+                <p className="text-sm text-slate-400 truncate">{scanResult.profile.email}</p>
+              </div>
+              <button onClick={() => setScanResult(null)} className="text-slate-400 btn-press p-1 shrink-0">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Alias */}
+            <div className="mb-5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
+                Alias (opcional)
+              </label>
+              <input
+                type="text"
+                value={aliasForScan}
+                onChange={(e) => setAliasForScan(e.target.value)}
+                placeholder={`Ej. "${scanResult.profile.nombre.split(' ')[0]}" o "Jefe"`}
+                className="input w-full"
+                autoFocus
+              />
+              <p className="text-xs text-slate-400 mt-1.5">Así aparecerá en tu lista. Solo tú lo ves.</p>
+            </div>
+
+            <button
+              onClick={handleSendFromScan}
+              disabled={sendingRequest}
+              className="w-full py-4 rounded-2xl text-sm font-bold text-white bg-violet-600 active:bg-violet-700 btn-press disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {sendingRequest
+                ? <Loader2 size={18} className="animate-spin" />
+                : <UserPlus size={18} />
+              }
+              {sendingRequest ? 'Enviando...' : `Agregar a ${scanResult.profile.nombre.split(' ')[0]}`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── My QR Modal ── */}
       {showQR && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-end"
@@ -215,7 +360,6 @@ export default function AmigosPage() {
                 <X size={20} />
               </button>
             </div>
-
             <div className="flex flex-col items-center gap-4">
               <div className="bg-white p-4 rounded-3xl shadow-lg border border-slate-100">
                 <QRCodeSVG value={addLink} size={200} bgColor="#ffffff" fgColor="#1e293b" level="M" />
@@ -236,7 +380,7 @@ export default function AmigosPage() {
         </div>
       )}
 
-      {/* Amigo detail sheet */}
+      {/* ── Amigo detail sheet ── */}
       {selectedAmigo && !confirmDelete && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-end"
@@ -247,7 +391,6 @@ export default function AmigosPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
-
             <div className="flex items-center gap-3 mb-5">
               <AmigoAvatar name={displayName(selectedAmigo)} />
               <div className="flex-1 min-w-0">
@@ -259,7 +402,6 @@ export default function AmigosPage() {
               </button>
             </div>
 
-            {/* Alias edit */}
             <div className="mb-4">
               <p className="text-xs font-bold text-slate-500 mb-2">ALIAS (como lo ves tú)</p>
               {editingAlias ? (
@@ -304,7 +446,7 @@ export default function AmigosPage() {
         </div>
       )}
 
-      {/* Delete confirm */}
+      {/* ── Delete confirm ── */}
       {confirmDelete && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-end"
@@ -320,7 +462,7 @@ export default function AmigosPage() {
             </div>
             <p className="font-bold text-slate-900 text-lg mb-1">Eliminar amigo</p>
             <p className="text-slate-500 text-sm mb-6">
-              ¿Eliminar a <span className="font-bold text-slate-700">{displayName(confirmDelete)}</span> de tu lista de amigos?
+              ¿Eliminar a <span className="font-bold text-slate-700">{displayName(confirmDelete)}</span> de tu lista?
               Esto lo removerá de tus obras compartidas también.
             </p>
             <div className="space-y-2">

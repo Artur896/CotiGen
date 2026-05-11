@@ -50,7 +50,7 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
   const isOwner = obra ? !obra.esCompartida : false;
 
   const colabIds = new Set(colaboradores.map((c) => c.colaboradorId));
-  const availableAmigos = amigos.filter((a) => !colabIds.has(a.amigoId));
+  const availableAmigos = amigos.filter((a) => !colabIds.has(a.amigoId) && a.amigoId !== user?.id);
 
   const colabDisplayName = (c: Colaborador) =>
     c.alias || c.profile?.nombre || 'Colaborador';

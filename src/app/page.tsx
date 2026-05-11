@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FileText, HardHat, ChevronRight } from 'lucide-react';
+import { FileText, HardHat, ChevronRight, Users } from 'lucide-react';
 
 const CARDS = [
   {
@@ -10,6 +10,15 @@ const CARDS = [
     border: 'active:border-emerald-400',
     title: 'Mis Obras',
     desc: 'Organiza listas de materiales por obra',
+  },
+  {
+    href: '/amigos',
+    icon: Users,
+    iconBg: 'bg-violet-100',
+    iconColor: 'text-violet-600',
+    border: 'active:border-violet-400',
+    title: 'Amigos',
+    desc: 'Agrega colaboradores y comparte obras',
   },
   {
     href: '/editor',
