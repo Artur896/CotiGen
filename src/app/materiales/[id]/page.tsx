@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLists } from '@/lib/store/useLists';
 import { useCatalog } from '@/lib/store/useCatalog';
+import { useObras } from '@/lib/store/useObras';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { MaterialList, ListItem, CatalogItem } from '@/lib/types/material';
-import { ArrowLeft, Save, FileDown, Plus, Trash2, Search, X } from 'lucide-react';
+import { ArrowLeft, Save, FileDown, Plus, Trash2, Search, X, Lock } from 'lucide-react';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { CATEGORIES } from '@/lib/data/defaultCatalog';
 import { useToast } from '@/components/shared/Toast';
@@ -32,7 +34,9 @@ export default function ListaEditorPage({
   const obraId = obra_id ?? null;
   const router = useRouter();
 
+  const { user } = useAuth();
   const { ready: listsReady, create, update, getById } = useLists();
+  const { obras } = useObras();
   const { items: catalog, customItems, addCustom } = useCatalog();
   const { success } = useToast();
 
@@ -43,6 +47,13 @@ export default function ListaEditorPage({
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [loaded, setLoaded] = useState(isNew);
+
+  // Permission check: read-only if collaborator who didn't create this list
+  const existingList = !isNew && listsReady ? getById(id) : null;
+  const obra = existingList?.obraId ? obras.find((o) => o.id === existingList.obraId) : null;
+  const isObraOwner = obra ? !obra.esCompartida : true;
+  const isListCreator = existingList ? existingList.userId === user?.id : true;
+  const readOnly = !isNew && loaded && !isListCreator && !isObraOwner;
 
   // Add material controls
   const [search, setSearch] = useState('');
@@ -291,18 +302,29 @@ export default function ListaEditorPage({
               ? <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
               : <FileDown size={18} />}
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-50 shrink-0"
-          >
-            <Save size={15} />
-            {saving ? '...' : 'Guardar'}
-          </button>
+          {readOnly ? (
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-slate-400 bg-slate-100 shrink-0">
+              <Lock size={15} /> Solo lectura
+            </div>
+          ) : (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-50 shrink-0"
+            >
+              <Save size={15} />
+              {saving ? '...' : 'Guardar'}
+            </button>
+          )}
         </div>
       </header>
 
       <main className="flex-1 px-4 py-4 space-y-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+        {readOnly && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl font-medium">
+            <Lock size={14} /> No eres el creador de esta lista — solo puedes consultarla
+          </div>
+        )}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl font-medium">
             {error}
@@ -318,9 +340,10 @@ export default function ListaEditorPage({
             <input
               type="text"
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => !readOnly && setNombre(e.target.value)}
               placeholder="Ej. Casa Hernández, Obra 3, Departamento..."
-              className="input"
+              className={`input ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
+              readOnly={readOnly}
             />
             <p className="text-xs text-slate-300 mt-1.5">Solo para identificar la lista, no aparece en el PDF</p>
           </label>
@@ -332,16 +355,17 @@ export default function ListaEditorPage({
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 block">Notas</span>
             <textarea
               value={notas}
-              onChange={(e) => setNotas(e.target.value)}
+              onChange={(e) => !readOnly && setNotas(e.target.value)}
               placeholder="Observaciones, nombre del cliente, dirección..."
               rows={3}
-              className="input resize-none"
+              className={`input resize-none ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
+              readOnly={readOnly}
             />
           </label>
         </section>
 
         {/* Add material */}
-        <section className="bg-white rounded-2xl border border-slate-100 p-4 space-y-4">
+        {!readOnly && <section className="bg-white rounded-2xl border border-slate-100 p-4 space-y-4">
           <h2 className="font-bold text-slate-900 text-base">Agregar Material</h2>
 
           {/* Search + dropdown */}
@@ -497,7 +521,7 @@ export default function ListaEditorPage({
           >
             <Plus size={18} /> Agregar a la lista
           </button>
-        </section>
+        </section>}
 
         {/* Materials list */}
         {items.length > 0 && (
@@ -536,12 +560,14 @@ export default function ListaEditorPage({
                       className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-bold text-lg flex items-center justify-center active:bg-slate-200 btn-press"
                     >+</button>
                   </div>
-                  <button
-                    onClick={() => removeLine(item.lineId)}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-300 active:bg-red-50 active:text-red-400 btn-press"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {!readOnly && (
+                    <button
+                      onClick={() => removeLine(item.lineId)}
+                      className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-300 active:bg-red-50 active:text-red-400 btn-press"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -549,13 +575,15 @@ export default function ListaEditorPage({
         )}
 
         {/* Save button */}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full py-4 rounded-2xl font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-50 text-base"
-        >
-          {saving ? 'Guardando...' : isNew ? 'Crear Lista' : 'Guardar Cambios'}
-        </button>
+        {!readOnly && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-4 rounded-2xl font-bold text-white bg-emerald-600 active:bg-emerald-700 btn-press disabled:opacity-50 text-base"
+          >
+            {saving ? 'Guardando...' : isNew ? 'Crear Lista' : 'Guardar Cambios'}
+          </button>
+        )}
       </main>
     </div>
   );
