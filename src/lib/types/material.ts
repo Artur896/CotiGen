@@ -24,6 +24,7 @@ export interface Obra {
 
 export interface MaterialList {
   id: string;
+  userId: string;
   numero: number;
   nombre: string;
   cliente: string;
@@ -37,4 +38,4 @@ export interface MaterialList {
   updatedAt: string;
 }
 
-export type CreateListInput = Omit<MaterialList, 'id' | 'numero' | 'createdAt' | 'updatedAt' | 'revision'>;
+export type CreateListInput = Omit<MaterialList, 'id' | 'userId' | 'numero' | 'createdAt' | 'updatedAt' | 'revision'>;

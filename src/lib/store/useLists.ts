@@ -8,6 +8,7 @@ import { MaterialList, CreateListInput } from '@/lib/types/material';
 function dbRowToList(row: any): MaterialList {
   return {
     id: row.id,
+    userId: row.user_id,
     numero: row.numero,
     nombre: row.nombre ?? '',
     cliente: '',
@@ -39,13 +40,34 @@ export function useLists() {
     if (!user) { setLists([]); setReady(true); return; }
     setReady(false);
 
-    const { data, error } = await supabase
+    // Own lists
+    const { data: ownData } = await supabase
       .from('listas')
       .select('*, lista_items(*)')
       .eq('user_id', user.id)
       .order('numero', { ascending: false });
 
-    if (!error && data) setLists(data.map(dbRowToList));
+    // Lists in obras where user is a collaborator (not their own)
+    let collabLists: any[] = [];
+    try {
+      const { data: collabRows, error } = await supabase
+        .from('obra_colaboradores')
+        .select('obra_id')
+        .eq('colaborador_id', user.id);
+
+      if (!error && collabRows && collabRows.length > 0) {
+        const obraIds = collabRows.map((r) => r.obra_id);
+        const { data } = await supabase
+          .from('listas')
+          .select('*, lista_items(*)')
+          .in('obra_id', obraIds)
+          .neq('user_id', user.id)
+          .order('numero', { ascending: false });
+        collabLists = data ?? [];
+      }
+    } catch { /* obra_colaboradores not set up yet */ }
+
+    setLists([...(ownData ?? []), ...collabLists].map(dbRowToList));
     setReady(true);
   }, [user]);
 
@@ -135,8 +157,12 @@ export function useLists() {
     return updatedList ? dbRowToList(updatedList) : null;
   }, [fetchLists]);
 
+  // Uses RPC so collaborators can also mark items without edit permissions
   const updateRevision = useCallback(async (id: string, revision: Record<string, boolean>) => {
-    await supabase.from('listas').update({ revision }).eq('id', id);
+    await supabase.rpc('update_lista_revision', {
+      lista_uuid: id,
+      new_revision: revision,
+    });
     setLists((prev) => prev.map((l) => l.id === id ? { ...l, revision } : l));
   }, []);
 

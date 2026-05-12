@@ -49,6 +49,9 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
   const obra = obras.find((o) => o.id === obraId);
   const isOwner = obra ? !obra.esCompartida : false;
 
+  // Can edit/delete a list: obra owner OR the list's creator
+  const canEditList = (l: MaterialList) => isOwner || l.userId === user?.id;
+
   const colabIds = new Set(colaboradores.map((c) => c.colaboradorId));
   const availableAmigos = amigos.filter((a) => !colabIds.has(a.amigoId) && a.amigoId !== user?.id);
 
@@ -244,20 +247,24 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
                     >
                       <ClipboardCheck size={14} /> Revisar
                     </button>
-                    <div className="w-px bg-slate-50" />
-                    <button
-                      onClick={() => router.push(`/materiales/${l.id}?obra_id=${obraId}`)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-indigo-500 active:bg-indigo-50 btn-press"
-                    >
-                      <Pencil size={14} /> Editar
-                    </button>
-                    <div className="w-px bg-slate-50" />
-                    <button
-                      onClick={() => setDeleteTarget(l)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-red-400 active:bg-red-50 btn-press"
-                    >
-                      <Trash2 size={14} /> Eliminar
-                    </button>
+                    {canEditList(l) && (
+                      <>
+                        <div className="w-px bg-slate-50" />
+                        <button
+                          onClick={() => router.push(`/materiales/${l.id}?obra_id=${obraId}`)}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-indigo-500 active:bg-indigo-50 btn-press"
+                        >
+                          <Pencil size={14} /> Editar
+                        </button>
+                        <div className="w-px bg-slate-50" />
+                        <button
+                          onClick={() => setDeleteTarget(l)}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-red-400 active:bg-red-50 btn-press"
+                        >
+                          <Trash2 size={14} /> Eliminar
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
