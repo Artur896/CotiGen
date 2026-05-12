@@ -543,22 +543,28 @@ export default function ListaEditorPage({
                     <p className="text-xs text-slate-400 mt-0.5">{item.unidad}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => updateQty(item.lineId, -1)}
-                      className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-bold text-lg flex items-center justify-center active:bg-slate-200 btn-press"
-                    >−</button>
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.cantidad}
-                      onChange={(e) => setQty(item.lineId, parseInt(e.target.value) || 1)}
-                      className="w-12 text-center font-bold border border-slate-200 rounded-xl py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                      style={{ fontSize: 16 }}
-                    />
-                    <button
-                      onClick={() => updateQty(item.lineId, 1)}
-                      className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-bold text-lg flex items-center justify-center active:bg-slate-200 btn-press"
-                    >+</button>
+                    {readOnly ? (
+                      <span className="w-12 text-center font-bold text-slate-700 py-2">{item.cantidad}</span>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => updateQty(item.lineId, -1)}
+                          className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-bold text-lg flex items-center justify-center active:bg-slate-200 btn-press"
+                        >−</button>
+                        <input
+                          type="number"
+                          min={1}
+                          value={item.cantidad}
+                          onChange={(e) => setQty(item.lineId, parseInt(e.target.value) || 1)}
+                          className="w-12 text-center font-bold border border-slate-200 rounded-xl py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                          style={{ fontSize: 16 }}
+                        />
+                        <button
+                          onClick={() => updateQty(item.lineId, 1)}
+                          className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-bold text-lg flex items-center justify-center active:bg-slate-200 btn-press"
+                        >+</button>
+                      </>
+                    )}
                   </div>
                   {!readOnly && (
                     <button
