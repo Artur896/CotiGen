@@ -14,7 +14,7 @@ import { InlineLoader } from '@/components/LoadingScreen';
 import { useToast } from '@/components/shared/Toast';
 import {
   ArrowLeft, Plus, Pencil, Trash2, ClipboardCheck, ChevronRight,
-  Package, CheckCircle2, Circle, Users, UserPlus, X, UserMinus,
+  Package, CheckCircle2, Circle, Users, UserPlus, X, UserMinus, Share2,
 } from 'lucide-react';
 
 const CATEGORIAS = [
@@ -49,8 +49,21 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
   const obra = obras.find((o) => o.id === obraId);
   const isOwner = obra ? !obra.esCompartida : false;
 
-  // Can edit/delete a list: obra owner OR the list's creator
-  const canEditList = (l: MaterialList) => isOwner || l.userId === user?.id;
+  // Solo el creador de la lista puede editar/eliminar
+  const canEditList = (l: MaterialList) => l.userId === user?.id;
+
+  const handleShare = async (l: MaterialList) => {
+    const title = l.nombre?.trim() || `Lista #${String(l.numero).padStart(2, '0')}`;
+    const url = `${window.location.origin}/materiales/${l.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: `Lista de materiales: ${title}`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        success('Enlace copiado');
+      }
+    } catch {}
+  };
 
   const colabIds = new Set(colaboradores.map((c) => c.colaboradorId));
   const availableAmigos = amigos.filter((a) => !colabIds.has(a.amigoId) && a.amigoId !== user?.id);
@@ -246,6 +259,13 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-emerald-500 active:bg-emerald-50 btn-press"
                     >
                       <ClipboardCheck size={14} /> Revisar
+                    </button>
+                    <div className="w-px bg-slate-50" />
+                    <button
+                      onClick={() => handleShare(l)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-sky-500 active:bg-sky-50 btn-press"
+                    >
+                      <Share2 size={14} /> Compartir
                     </button>
                     {canEditList(l) && (
                       <>
