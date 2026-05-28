@@ -207,13 +207,13 @@ export default function ListaEditorPage({
 
   const updateQty = (lineId: string, delta: number) =>
     setItems((prev) => prev.map((i) => i.lineId === lineId
-      ? { ...i, cantidad: Math.max(1, i.cantidad + delta) }
+      ? { ...i, cantidad: Math.max(0.5, Math.round((i.cantidad + delta) * 10) / 10) }
       : i
     ));
 
   const setQty = (lineId: string, val: number) =>
     setItems((prev) => prev.map((i) => i.lineId === lineId
-      ? { ...i, cantidad: Math.max(1, val) }
+      ? { ...i, cantidad: Math.max(0.5, Math.round(val * 10) / 10) }
       : i
     ));
 
@@ -496,22 +496,27 @@ export default function ListaEditorPage({
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 block">Cantidad</span>
             <div className="flex items-center border-2 border-slate-200 rounded-2xl overflow-hidden">
               <button
-                onClick={() => setAddQty((q) => Math.max(1, q - 1))}
+                onClick={() => setAddQty((q) => Math.max(0.5, Math.round((q - 1) * 10) / 10))}
                 className="w-12 h-12 flex items-center justify-center text-slate-500 font-bold text-2xl active:bg-slate-100 btn-press shrink-0"
               >−</button>
               <input
                 type="number"
-                min={1}
+                min={0.5}
+                step={0.5}
                 value={addQty}
-                onChange={(e) => setAddQty(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => setAddQty(Math.max(0.5, parseFloat(e.target.value) || 0.5))}
                 className="flex-1 h-12 text-center font-bold text-slate-900 focus:outline-none bg-transparent"
                 style={{ fontSize: 16 }}
               />
               <button
-                onClick={() => setAddQty((q) => q + 1)}
+                onClick={() => setAddQty((q) => Math.round((q + 1) * 10) / 10)}
                 className="w-12 h-12 flex items-center justify-center text-slate-500 font-bold text-2xl active:bg-slate-100 btn-press shrink-0"
               >+</button>
             </div>
+            <button
+              onClick={() => setAddQty((q) => Math.round((q + 0.5) * 10) / 10)}
+              className="mt-2 w-full h-10 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50 active:bg-emerald-100 btn-press border border-emerald-200"
+            >+ ½ más</button>
           </div>
 
           <button
@@ -553,9 +558,10 @@ export default function ListaEditorPage({
                         >−</button>
                         <input
                           type="number"
-                          min={1}
+                          min={0.5}
+                          step={0.5}
                           value={item.cantidad}
-                          onChange={(e) => setQty(item.lineId, parseInt(e.target.value) || 1)}
+                          onChange={(e) => setQty(item.lineId, parseFloat(e.target.value) || 0.5)}
                           className="w-12 text-center font-bold border border-slate-200 rounded-xl py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                           style={{ fontSize: 16 }}
                         />
@@ -563,6 +569,11 @@ export default function ListaEditorPage({
                           onClick={() => updateQty(item.lineId, 1)}
                           className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-bold text-lg flex items-center justify-center active:bg-slate-200 btn-press"
                         >+</button>
+                        <button
+                          onClick={() => updateQty(item.lineId, 0.5)}
+                          className="h-9 px-2 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center active:bg-emerald-100 btn-press"
+                          title="Agregar medio"
+                        >+½</button>
                       </>
                     )}
                   </div>

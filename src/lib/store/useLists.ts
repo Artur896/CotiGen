@@ -67,7 +67,33 @@ export function useLists() {
       }
     } catch { /* obra_colaboradores not set up yet */ }
 
-    setLists([...(ownData ?? []), ...collabLists].map(dbRowToList));
+    // Lists in obras the user OWNS, created by collaborators
+    let ownerCollabLists: any[] = [];
+    try {
+      const { data: ownedObras } = await supabase
+        .from('obras')
+        .select('id')
+        .eq('user_id', user.id);
+
+      if (ownedObras && ownedObras.length > 0) {
+        const obraIds = ownedObras.map((o) => o.id);
+        const { data } = await supabase
+          .from('listas')
+          .select('*, lista_items(*)')
+          .in('obra_id', obraIds)
+          .neq('user_id', user.id)
+          .order('numero', { ascending: false });
+        ownerCollabLists = data ?? [];
+      }
+    } catch {}
+
+    // Merge and deduplicate by id
+    const seen = new Set<string>();
+    const merged: any[] = [];
+    for (const row of [...(ownData ?? []), ...collabLists, ...ownerCollabLists]) {
+      if (!seen.has(row.id)) { seen.add(row.id); merged.push(row); }
+    }
+    setLists(merged.map(dbRowToList));
     setReady(true);
   }, [user]);
 
