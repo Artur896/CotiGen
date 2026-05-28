@@ -42,7 +42,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <AuthGuard>
               <NotificacionesProvider>
-                {children}
+                <div className="md:pl-56 min-h-screen flex flex-col">
+                  {children}
+                </div>
               </NotificacionesProvider>
             </AuthGuard>
           </AuthProvider>

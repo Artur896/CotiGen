@@ -60,9 +60,44 @@ input, textarea, select {
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }
 
-/* Bottom nav safe padding */
+/* Bottom nav safe padding — solo en móvil, en desktop no hay bottom nav */
 .pb-nav {
   padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .pb-nav { padding-bottom: 2.5rem; }
+}
+
+/* ── Responsivo en desktop ──────────────────────────────────── */
+/* El contenido de los headers sticky se centra en pantallas grandes */
+@media (min-width: 1024px) {
+  /* Limitar ancho del contenido dentro del header sticky */
+  header > div,
+  header > nav {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Limitar ancho del main en páginas de lista/detalle */
+  main {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+  /* FAB en obras se ajusta al área de contenido */
+  .fab-responsive {
+    right: max(1.25rem, calc((100vw - 56*4px - 1200px) / 2 + 1.25rem));
+  }
+}
+
+/* Input más pequeño en desktop */
+@media (min-width: 768px) {
+  .input {
+    font-size: 14px;
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+  }
 }
 
 /* Active press scale for mobile buttons */

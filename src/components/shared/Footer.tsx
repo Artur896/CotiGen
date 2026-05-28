@@ -22,8 +22,12 @@ export function Footer({ data, className, accentColor = 'bg-black' }: FooterProp
           )}
           <div className="flex justify-between py-4">
             <span className="text-xl font-bold uppercase tracking-wider">Total</span>
-            <span className={ `text-2xl font-bold ${accentColor === 'bg-black' ? 'text-black' : 'text-blue-600'}`}>
-              {formatCurrency(quotation.total)}
+            <span className={`text-2xl font-bold ${accentColor === 'bg-black' ? 'text-black' : 'text-blue-600'}`}>
+              {formatCurrency(
+                quotation.type === 'plumbing' && quotation.isManualTotal && quotation.manualTotalValue != null
+                  ? quotation.manualTotalValue
+                  : quotation.total
+              )}
             </span>
           </div>
         </div>

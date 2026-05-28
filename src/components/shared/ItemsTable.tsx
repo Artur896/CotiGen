@@ -28,7 +28,11 @@ export function ItemsTable({ data, className }: ItemsTableProps) {
               <tr key={index} className="border-b border-slate-50">
                 <td className="py-4">{item.description}</td>
                 <td className="py-4 text-center">{item.quantity}</td>
-                {showPrices && <td className="py-4" />}
+                {showPrices && (
+                  <td className="py-4 text-right font-semibold">
+                    {formatCurrency(item.quantity * item.unitPrice)}
+                  </td>
+                )}
               </tr>
             ))}
             {quotation.showLaborCost !== false && (

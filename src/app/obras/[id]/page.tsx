@@ -42,6 +42,9 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MaterialList | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<MaterialList | null>(null);
+  const [shareStep, setShareStep] = useState<'ask' | 'name'>('ask');
+  const [shareNombre, setShareNombre] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
   const [showAddColab, setShowAddColab] = useState(false);
@@ -54,7 +57,8 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
   // Solo el creador de la lista puede editar/eliminar
   const canEditList = (l: MaterialList) => l.userId === user?.id;
 
-  const handleShare = async (l: MaterialList) => {
+  const handleShare = async (l: MaterialList, customName?: string) => {
+    setShareTarget(null);
     setSharingId(l.id);
     try {
       const res = await fetch('/api/materiales/pdf', {
@@ -64,13 +68,21 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
       });
       if (!res.ok) { showError('Error al generar el PDF'); return; }
       const blob = await res.blob();
-      const filename = `lista-${String(l.numero).padStart(4, '0')}.pdf`;
+      const filename = customName
+        ? `${customName.trim()}.pdf`
+        : `lista-${String(l.numero).padStart(4, '0')}.pdf`;
       await downloadPDFBlob(blob, filename);
     } catch {
       showError('No se pudo compartir');
     } finally {
       setSharingId(null);
     }
+  };
+
+  const openShareModal = (l: MaterialList) => {
+    setShareTarget(l);
+    setShareStep('ask');
+    setShareNombre('');
   };
 
   const colabIds = new Set(colaboradores.map((c) => c.colaboradorId));
@@ -270,7 +282,7 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
                     </button>
                     <div className="w-px bg-slate-50" />
                     <button
-                      onClick={() => handleShare(l)}
+                      onClick={() => openShareModal(l)}
                       disabled={sharingId === l.id}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-sky-500 active:bg-sky-50 btn-press disabled:opacity-50"
                     >
@@ -563,6 +575,78 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share name modal */}
+      {shareTarget && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end"
+          onClick={() => setShareTarget(null)}
+        >
+          <div
+            className="bg-white w-full rounded-t-3xl p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+            <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center mb-3">
+              <Share2 size={22} className="text-sky-500" />
+            </div>
+
+            {shareStep === 'ask' ? (
+              <>
+                <p className="font-bold text-slate-900 text-lg mb-1">Compartir lista</p>
+                <p className="text-slate-500 text-sm mb-6">
+                  ¿Quieres colocarle un nombre personalizado al PDF?
+                </p>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShareStep('name')}
+                    className="w-full py-4 rounded-2xl text-sm font-bold text-white bg-sky-500 active:bg-sky-600 btn-press"
+                  >
+                    Sí, ponerle nombre
+                  </button>
+                  <button
+                    onClick={() => handleShare(shareTarget)}
+                    className="w-full py-4 rounded-2xl text-sm font-bold text-slate-700 bg-slate-100 active:bg-slate-200 btn-press"
+                  >
+                    No, compartir así
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="font-bold text-slate-900 text-lg mb-1">Nombre del PDF</p>
+                <p className="text-slate-500 text-sm mb-4">
+                  Escribe el nombre con el que se compartirá la lista
+                </p>
+                <input
+                  type="text"
+                  value={shareNombre}
+                  onChange={(e) => setShareNombre(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && shareNombre.trim() && handleShare(shareTarget, shareNombre)}
+                  placeholder={`lista-${String(shareTarget.numero).padStart(4, '0')}`}
+                  className="input mb-4"
+                  autoFocus
+                />
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleShare(shareTarget, shareNombre.trim() || undefined)}
+                    disabled={!shareNombre.trim()}
+                    className="w-full py-4 rounded-2xl text-sm font-bold text-white bg-sky-500 active:bg-sky-600 btn-press disabled:opacity-50"
+                  >
+                    Compartir
+                  </button>
+                  <button
+                    onClick={() => setShareStep('ask')}
+                    className="w-full py-4 rounded-2xl text-sm font-bold text-slate-700 bg-slate-100 active:bg-slate-200 btn-press"
+                  >
+                    Atrás
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

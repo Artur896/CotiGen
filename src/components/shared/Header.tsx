@@ -13,15 +13,11 @@ export function Header({ data, className }: HeaderProps) {
       <div className="flex justify-between items-start border-b pb-8">
         <div>
           <h1 className="text-3xl font-bold uppercase tracking-tighter">Cotización</h1>
-          {quotation.type !== 'plumbing' && (
-            <p className="text-gray-500 mt-1">Ref: # {quotationNumber}</p>
-          )}
+          <p className="text-gray-500 mt-1">Ref: {quotationNumber}</p>
         </div>
         <div className="text-right">
-          {quotation.type !== 'plumbing' && (
-            <h2 className="text-xl font-semibold">
-              Servicio de Desarrollo Web
-            </h2>
+          {quotation.type === 'webdev' && (
+            <h2 className="text-xl font-semibold">Servicio de Desarrollo Web</h2>
           )}
           <p className="text-gray-500">{date}</p>
         </div>

@@ -50,10 +50,8 @@ export default function ListaEditorPage({
 
   // Permission check: read-only if collaborator who didn't create this list
   const existingList = !isNew && listsReady ? getById(id) : null;
-  const obra = existingList?.obraId ? obras.find((o) => o.id === existingList.obraId) : null;
-  const isObraOwner = obra ? !obra.esCompartida : true;
   const isListCreator = existingList ? existingList.userId === user?.id : true;
-  const readOnly = !isNew && loaded && !isListCreator && !isObraOwner;
+  const readOnly = !isNew && loaded && !isListCreator;
 
   // Add material controls
   const [search, setSearch] = useState('');

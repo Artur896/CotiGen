@@ -27,5 +27,6 @@ export interface PlumbingQuotation {
   showPrices?: boolean;
   isManualTotal?: boolean;
   manualTotalValue?: number;
+  notas?: string;
   total: number;
 }

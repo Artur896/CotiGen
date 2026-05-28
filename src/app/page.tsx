@@ -34,7 +34,7 @@ const CARDS = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <div className="pt-16 pb-10 px-6 text-center">
+      <div className="pt-10 md:pt-16 pb-8 px-6 text-center">
         <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-emerald-200">
           <FileText size={30} />
         </div>
@@ -42,7 +42,7 @@ export default function Home() {
         <p className="text-slate-500 text-sm mt-1">¿Qué quieres hacer hoy?</p>
       </div>
 
-      <main className="flex-1 px-5 space-y-3 pb-safe">
+      <main className="flex-1 px-5 space-y-3 pb-safe max-w-xl mx-auto w-full">
         {CARDS.map(({ href, icon: Icon, iconBg, iconColor, border, title, desc }) => (
           <Link
             key={href}
