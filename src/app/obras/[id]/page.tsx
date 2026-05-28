@@ -12,6 +12,7 @@ import { Colaborador } from '@/lib/types/social';
 import { BottomNav } from '@/components/BottomNav';
 import { InlineLoader } from '@/components/LoadingScreen';
 import { useToast } from '@/components/shared/Toast';
+import { downloadPDFBlob } from '@/lib/pdf-client';
 import {
   ArrowLeft, Plus, Pencil, Trash2, ClipboardCheck, ChevronRight,
   Package, CheckCircle2, Circle, Users, UserPlus, X, UserMinus, Share2,
@@ -40,6 +41,7 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
 
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MaterialList | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
   const [showAddColab, setShowAddColab] = useState(false);
@@ -53,16 +55,22 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
   const canEditList = (l: MaterialList) => l.userId === user?.id;
 
   const handleShare = async (l: MaterialList) => {
-    const title = l.nombre?.trim() || `Lista #${String(l.numero).padStart(2, '0')}`;
-    const url = `${window.location.origin}/materiales/${l.id}`;
+    setSharingId(l.id);
     try {
-      if (navigator.share) {
-        await navigator.share({ title, text: `Lista de materiales: ${title}`, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        success('Enlace copiado');
-      }
-    } catch {}
+      const res = await fetch('/api/materiales/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(l),
+      });
+      if (!res.ok) { showError('Error al generar el PDF'); return; }
+      const blob = await res.blob();
+      const filename = `lista-${String(l.numero).padStart(4, '0')}.pdf`;
+      await downloadPDFBlob(blob, filename);
+    } catch {
+      showError('No se pudo compartir');
+    } finally {
+      setSharingId(null);
+    }
   };
 
   const colabIds = new Set(colaboradores.map((c) => c.colaboradorId));
@@ -263,9 +271,13 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
                     <div className="w-px bg-slate-50" />
                     <button
                       onClick={() => handleShare(l)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-sky-500 active:bg-sky-50 btn-press"
+                      disabled={sharingId === l.id}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-sky-500 active:bg-sky-50 btn-press disabled:opacity-50"
                     >
-                      <Share2 size={14} /> Compartir
+                      {sharingId === l.id
+                        ? <div className="w-3.5 h-3.5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+                        : <Share2 size={14} />}
+                      Compartir
                     </button>
                     {canEditList(l) && (
                       <>
