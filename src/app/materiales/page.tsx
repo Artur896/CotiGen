@@ -5,19 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useLists } from '@/lib/store/useLists';
 import { MaterialList } from '@/lib/types/material';
 import { BottomNav } from '@/components/BottomNav';
+import { CategoryPickerSheet } from '@/components/CategoryPickerSheet';
 import { Package, Plus, Pencil, Trash2, Search, X, ChevronRight, LogOut, ClipboardCheck } from 'lucide-react';
 import { InlineLoader } from '@/components/LoadingScreen';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useToast } from '@/components/shared/Toast';
-
-const CATEGORIAS = [
-  { key: 'CPVC',           label: 'CPVC',            desc: 'Agua caliente y fría',        bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-700',    dot: 'bg-red-500'    },
-  { key: 'PVC Sanitario',  label: 'PVC Sanitario',   desc: 'Drenaje y desagüe',           bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700',  dot: 'bg-green-500'  },
-  { key: 'PVC Hidráulico', label: 'PVC Hidráulico',  desc: 'Agua a presión',              bg: 'bg-cyan-50',   border: 'border-cyan-200',   text: 'text-cyan-700',   dot: 'bg-cyan-500'   },
-  { key: 'Cobre',          label: 'Cobre',            desc: 'Instalaciones de cobre',      bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', dot: 'bg-orange-500' },
-  { key: 'Tuboplus',       label: 'Tuboplus',         desc: 'PVC para presión',            bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
-  { key: 'General',        label: 'General',          desc: 'Todas las categorías',        bg: 'bg-slate-50',  border: 'border-slate-200',  text: 'text-slate-700',  dot: 'bg-slate-500'  },
-];
 
 function formatDate(iso: string) {
   const [y, m, d] = iso.split('-');
@@ -210,40 +202,7 @@ export default function MaterialesPage() {
         </div>
       )}
 
-      {/* Category picker sheet */}
-      {showCatPicker && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-5"
-          onClick={() => setShowCatPicker(false)}
-        >
-          <div
-            className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-extrabold text-slate-900 text-center">¿Qué tipo de lista necesitas?</h2>
-            <p className="text-sm text-slate-400 mt-1 mb-5 text-center">Selecciona una categoría</p>
-
-            <div className="grid grid-cols-2 gap-3">
-              {CATEGORIAS.map(({ key, label, desc, bg, border, text, dot }) => (
-                <button
-                  key={key}
-                  onClick={() => {
-                    setShowCatPicker(false);
-                    router.push(`/materiales/nueva?cat=${encodeURIComponent(key)}`);
-                  }}
-                  className={`flex flex-col items-start gap-2 p-4 rounded-2xl border-2 ${bg} ${border} btn-press text-left`}
-                >
-                  <span className={`w-3 h-3 rounded-full ${dot}`} />
-                  <div>
-                    <p className={`font-bold text-sm ${text}`}>{label}</p>
-                    <p className="text-xs text-slate-400 mt-0.5 leading-tight">{desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <CategoryPickerSheet open={showCatPicker} onClose={() => setShowCatPicker(false)} />
 
       <BottomNav />
     </div>

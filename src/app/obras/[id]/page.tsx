@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { MaterialList } from '@/lib/types/material';
 import { Colaborador } from '@/lib/types/social';
 import { BottomNav } from '@/components/BottomNav';
+import { CategoryPickerSheet } from '@/components/CategoryPickerSheet';
 import { InlineLoader } from '@/components/LoadingScreen';
 import { useToast } from '@/components/shared/Toast';
 import { downloadPDFBlob } from '@/lib/pdf-client';
@@ -17,15 +18,6 @@ import {
   ArrowLeft, Plus, Pencil, Trash2, ClipboardCheck, ChevronRight,
   Package, CheckCircle2, Circle, Users, UserPlus, X, UserMinus, Share2,
 } from 'lucide-react';
-
-const CATEGORIAS = [
-  { key: 'CPVC',           label: 'CPVC',           desc: 'Agua caliente y fría',   dot: 'bg-red-500'    },
-  { key: 'PVC Sanitario',  label: 'PVC Sanitario',  desc: 'Drenaje y desagüe',      dot: 'bg-green-500'  },
-  { key: 'PVC Hidráulico', label: 'PVC Hidráulico', desc: 'Agua a presión',         dot: 'bg-cyan-500'   },
-  { key: 'Cobre',          label: 'Cobre',           desc: 'Instalaciones de cobre', dot: 'bg-orange-500' },
-  { key: 'Tuboplus',       label: 'Tuboplus',        desc: 'PVC para presión',       dot: 'bg-blue-500'   },
-  { key: 'General',        label: 'General',         desc: 'Todas las categorías',   dot: 'bg-slate-500'  },
-];
 
 type PageParams = { id: string };
 
@@ -393,41 +385,7 @@ export default function ObraDetailPage({ params }: { params: Promise<PageParams>
         <Plus size={26} />
       </button>
 
-      {/* Category picker */}
-      {showCatPicker && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-5"
-          onClick={() => setShowCatPicker(false)}
-        >
-          <div
-            className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-extrabold text-slate-900 text-center">¿Qué tipo de lista?</h2>
-            <p className="text-sm text-slate-400 mt-1 mb-5 text-center">Selecciona una categoría</p>
-            <div className="grid grid-cols-2 gap-3">
-              {CATEGORIAS.map(({ key, label, desc, dot }) => (
-                <button
-                  key={key}
-                  onClick={() => {
-                    setShowCatPicker(false);
-                    router.push(
-                      `/materiales/nueva?cat=${encodeURIComponent(key)}&obra_id=${obraId}`
-                    );
-                  }}
-                  className="flex flex-col items-start gap-2 p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 btn-press text-left active:border-emerald-200 active:bg-emerald-50"
-                >
-                  <span className={`w-3 h-3 rounded-full ${dot}`} />
-                  <div>
-                    <p className="font-bold text-sm text-slate-800">{label}</p>
-                    <p className="text-xs text-slate-400 mt-0.5 leading-tight">{desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <CategoryPickerSheet open={showCatPicker} onClose={() => setShowCatPicker(false)} obraId={obraId} />
 
       {/* Delete list confirm */}
       {deleteTarget && (
